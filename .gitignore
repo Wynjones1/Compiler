@@ -29,7 +29,6 @@
 *.hex
 
 bin/
-src/
 build/
 
 *.log

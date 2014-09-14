@@ -9,39 +9,51 @@ typedef struct type type_t;
 
 enum AST_TYPE
 {
-	AST_TYPE_ID,
-	AST_TYPE_FUNCTION,
-	AST_TYPE_FUNC_CALL,
-	AST_TYPE_BINOP,
 	AST_TYPE_NONE,
-	AST_TYPE_TYPE,
-	AST_TYPE_INTEGER,
-	AST_TYPE_FLOAT,
-	AST_TYPE_STRING,
-	AST_TYPE_IMPORT,
-	AST_TYPE_STATEMENT_LIST,
-	AST_TYPE_RETURN,
-	AST_TYPE_PROGRAM,
+	AST_TYPE_BINOP,
 	AST_TYPE_DECL,
 	AST_TYPE_DECL_LIST,
-	AST_TYPE_IF,
-	AST_TYPE_WHILE,
-	AST_TYPE_FOR,
 	AST_TYPE_DO,
+	AST_TYPE_FLOAT,
+	AST_TYPE_FOR,
+	AST_TYPE_FUNCTION,
+	AST_TYPE_FUNC_CALL,
+	AST_TYPE_ID,
+	AST_TYPE_IF,
+	AST_TYPE_IMPORT,
+	AST_TYPE_INTEGER,
+	AST_TYPE_PROGRAM,
+	AST_TYPE_RETURN,
+	AST_TYPE_STATEMENT_LIST,
+	AST_TYPE_STRING,
+	AST_TYPE_TYPE,
+	AST_TYPE_WHILE,
 	NUM_AST_TYPES
 };
 
 enum TYPE_MOD
 {
+	TYPE_MOD_ARRAY,
 	TYPE_MOD_NONE,
 	TYPE_MOD_POINTER,
-	TYPE_MOD_ARRAY
+	NUM_TYPE_MODS
 };
+
+struct ast
+{
+	enum AST_TYPE type;
+};
+
+typedef struct identifier
+{
+	enum AST_TYPE type;
+	const char *name;
+}identifier_t;
 
 typedef struct import
 {
 	enum AST_TYPE  type;
-	const char    *name;
+	identifier_t  *name;
 }import_t;
 
 struct type
@@ -54,14 +66,9 @@ struct type
 	bool is_float;
 	union
 	{
-		const char *name;
-		struct type *next;
+		identifier_t *name;
+		struct type  *next;
 	};
-};
-
-struct ast
-{
-	enum AST_TYPE type;
 };
 
 typedef struct return_s
@@ -94,9 +101,9 @@ typedef struct binop
 typedef struct decl
 {
 	enum AST_TYPE type;
-	type_t     *t;
-	const char *name;
-	ast_t      *expr;
+	type_t       *t;
+	identifier_t *name;
+	ast_t        *expr;
 }decl_t;
 
 typedef struct decl_list
@@ -127,13 +134,6 @@ typedef struct statement_list
 	ast_t **statements;
 }statement_list_t;
 
-typedef struct identifier
-{
-	enum AST_TYPE type;
-	const char *name;
-}identifier_t;
-
-
 typedef struct function
 {
 	enum AST_TYPE type;
@@ -141,7 +141,7 @@ typedef struct function
 	identifier_t     *name;
 	decl_list_t      *input;
 	decl_list_t      *output;
-	statement_list_t *statements;
+	ast_t            *statements;
 	symbol_table_t   *table;
 }function_t;
 

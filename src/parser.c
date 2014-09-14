@@ -28,13 +28,21 @@
 
 static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *table);
 static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *table);
-static bool parse_statement_list(token_t **tokens_, statement_list_t **out, symbol_table_t *table);
+static bool parse_statement_list(token_t **tokens_, ast_t **out, symbol_table_t *table);
 
 char *copy_string(const char *string)
 {
 	size_t s = strlen(string);
 	char *out = (char*) malloc(s + 1);
 	strcpy(out, string);
+	return out;
+}
+
+static identifier_t *make_id(const char *name)
+{
+	identifier_t *out = MALLOC_T(identifier_t);
+	out->name = copy_string(name);
+	out->type = AST_TYPE_ID;
 	return out;
 }
 
@@ -47,8 +55,8 @@ static bool parse_import(token_t **tokens_, import_t **import, symbol_table_t *t
 		IS_SEMICOLON(tokens[2]))
 	{
 			*import = MALLOC_T(import_t);
-			(*import)->type = AST_TYPE_IMPORT;
-			(*import)->name = copy_string(tokens[1].string);
+			(*import)->type       = AST_TYPE_IMPORT;
+			(*import)->name       = make_id(tokens[1].string);
 			*tokens_ = tokens + 3;
 			return true;
 	}
@@ -65,8 +73,10 @@ static bool parse_type(token_t **tokens_, type_t **type, symbol_table_t *table)
 			(*type)->is_int = true;
 		else if(strcmp(tokens[0].string, "float") == 0)
 			(*type)->is_float = true;
+
 		(*type)->type = AST_TYPE_TYPE;
-		(*type)->name = copy_string(tokens[0].string);
+		(*type)->name = make_id(tokens[1].string);
+
 		*tokens_ = tokens + 1;
 		return true;
 	}
@@ -81,10 +91,10 @@ static bool parse_decl(token_t **tokens_, decl_t **decl, symbol_table_t *table, 
 	{
 		if(IS_ID(tokens[0]))
 		{
-			*decl = MALLOC_T(decl_t);
+			*decl         = MALLOC_T(decl_t);
 			(*decl)->type = AST_TYPE_DECL;
-			(*decl)->t = type;
-			(*decl)->name = copy_string(tokens[0].string);
+			(*decl)->t    = type;
+			(*decl)->name = make_id(tokens->string);
 			tokens++;
 
 			if(tokens[0].type == TOK_OP && tokens[0].op == OP_EQ)
@@ -282,9 +292,7 @@ static bool parse_id(token_t **tokens_, identifier_t **id, symbol_table_t *table
 	token_t *tokens = *tokens_;
 	if(IS_ID(tokens[0]))
 	{
-		*id = MALLOC_T(identifier_t);
-		(*id)->type = AST_TYPE_ID;
-		(*id)->name = copy_string(tokens->string);
+		*id = make_id(tokens->string);
 		*tokens_    = tokens + 1;
 		return true;
 	}
@@ -382,7 +390,7 @@ static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *tab
 		*tokens_ = tokens;
 		return true;
 	}
-	if(parse_statement_list(&tokens, (statement_list_t**)ret, table))
+	if(parse_statement_list(&tokens, ret, table))
 	{
 		*tokens_ = tokens;
 		return true;
@@ -391,7 +399,7 @@ static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *tab
 	return false;
 }
 
-static bool parse_statement_list(token_t **tokens_, statement_list_t **out, symbol_table_t *table)
+static bool parse_statement_list(token_t **tokens_, ast_t **out, symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
 	if(!IS_LBRACE(tokens[0]))
@@ -401,7 +409,6 @@ static bool parse_statement_list(token_t **tokens_, statement_list_t **out, symb
 	}
 	tokens++;
 	ast_t **statements = NULL;
-	statement_list_t *list;
 	ast_t *statement;
 	int size = 0;
 	while(IS_NEWLINE(tokens[0])) tokens++;
@@ -419,12 +426,20 @@ static bool parse_statement_list(token_t **tokens_, statement_list_t **out, symb
 		return false;
 	}
 
-	list             = MALLOC_T(statement_list_t);
-	list->type       = AST_TYPE_STATEMENT_LIST;
-	list->size       = size;
-	list->statements = statements;
-
-	*out     = list;
+	if(size == 1)
+	{
+		*out = statements[0];
+		free(statements);
+	}
+	else
+	{
+		statement_list_t *list;
+		list             = MALLOC_T(statement_list_t);
+		list->type       = AST_TYPE_STATEMENT_LIST;
+		list->size       = size;
+		list->statements = statements;
+		*out             = (ast_t*) list;
+	}
 	*tokens_ = tokens + 1;
 	return true;
 }
@@ -458,16 +473,14 @@ static bool parse_function(token_t **tokens_, function_t **function, symbol_tabl
 				tokens += 1;
 			}
 			if(IS_NEWLINE(tokens[0])) tokens++;
-			statement_list_t *statements;
+			ast_t *statements;
 			if(!parse_statement_list(&tokens, &statements, table)) ERROR();
 			function_t *temp = MALLOC_T(function_t);
 			temp->type       = AST_TYPE_FUNCTION;
 			temp->input      = inputs;
 			temp->output     = outputs;
 			temp->statements = statements;
-			temp->name       = MALLOC_T(identifier_t);
-			temp->name->name = name;
-			temp->name->type = AST_TYPE_ID;
+			temp->name       = make_id(name);
 			temp->table      = NULL;
 			*function = temp;
 			*tokens_  = tokens;

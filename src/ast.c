@@ -56,7 +56,7 @@ static void print_DECL(ast_t *ast, FILE *fp)
 	decl_t *decl = (decl_t*)ast;
 	if(decl->name)
 	{
-		PRINT("DECL %s", decl->name);
+		PRINT("DECL %s", decl->name->name);
 		if(decl->expr)
 		{
 			ast_print(decl->t, fp);
@@ -91,7 +91,7 @@ static void print_BINOP(ast_t *ast, FILE *fp)
 static void print_TYPE(ast_t *ast, FILE *fp)
 {
 	type_t *type = (type_t*)ast;
-	PRINT("TYPE %s", type->name);
+	PRINT("TYPE %s", ((identifier_t*)type->name)->name);
 }
 
 static void print_INTEGER(ast_t *ast, FILE *fp)
@@ -116,7 +116,8 @@ static void print_STRING(ast_t *ast, FILE *fp)
 static void print_IMPORT(ast_t *ast, FILE *fp)
 {
 	import_t *import = (import_t*)ast;
-	PRINT("IMPORT %s", import->name);
+	//TODO:Parse full name.
+	PRINT("IMPORT %s", ((identifier_t*)import->name)->name);
 }
 
 static void print_STATEMENT_LIST(ast_t *ast, FILE *fp)

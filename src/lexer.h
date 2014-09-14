@@ -5,6 +5,7 @@
 
 enum TOK
 {
+	TOK_ASSIGN,
 	TOK_LPAREN,
 	TOK_RPAREN,
 	TOK_LBRACE,
@@ -25,43 +26,48 @@ enum TOK
 	NUM_TOKENS
 };
 
+//WARNING: if you change this, you must chage
+//the keyword string array.
 enum KW
 {
-	KW_IF,
-	KW_ELSE,
-	KW_FUNCTION,
-	KW_DO,
-	KW_WHILE,
-	KW_FROM,
-	KW_IMPORT,
-	KW_NAMESPACE,
-	KW_RETURN,
 	KW_BREAK,
 	KW_CASE,
 	KW_CONTINUE,
 	KW_DEFAULT,
+	KW_DO,
+	KW_ELSE,
+	KW_FROM,
+	KW_FUNCTION,
+	KW_IF,
+	KW_IMPORT,
+	KW_NAMESPACE,
+	KW_RETURN,
 	KW_STRUCT,
 	KW_TYPEDEF,
 	KW_VOID,
+	KW_WHILE,
 	NUM_KEYWORDS
 };
 
 enum OP
 {
-	OP_ADD = '+',
-	OP_SUB = '-',
-	OP_MUL = '*',
-	OP_DIV = '/',
-	OP_LT = '<',
-	OP_GT = '>',
-	OP_EQ = '=',
-	OP_QU = '?',
-	OP_NOT = '~',
-	OP_BANG = '!',
-	OP_MOD = '%',
+	OP_ADD   = '+',
+	OP_AND   = '&',
+	OP_BANG  = '!',
 	OP_CARET = '^',
-	OP_AND = '&',
-	OP_OR = '|'
+	OP_DIV   = '/',
+	OP_EQ    = '=',
+	OP_GT    = '>',
+	OP_GTE,
+	OP_LT    = '<',
+	OP_LTE,
+	OP_MOD   = '%',
+	OP_MUL   = '*',
+	OP_NEQ,
+	OP_NOT   = '~',
+	OP_OR    = '|',
+	OP_QU    = '?',
+	OP_SUB   = '-',
 };
 
 typedef struct token

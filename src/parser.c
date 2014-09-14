@@ -50,15 +50,21 @@ static bool parse_import(token_t **tokens_, import_t **import, symbol_table_t *t
 {
 	token_t *tokens = *tokens_;
 	*import = NULL;
-	if( IS_KEYWORD(tokens[0], IMPORT) &&
-		IS_ID(tokens[1]) &&
-		IS_SEMICOLON(tokens[2]))
+	if( IS_KEYWORD(tokens[0], IMPORT))
 	{
+		if(IS_ID(tokens[1]) &&
+		IS_SEMICOLON(tokens[2]))
+		{
 			*import = MALLOC_T(import_t);
 			(*import)->type       = AST_TYPE_IMPORT;
 			(*import)->name       = make_id(tokens[1].string);
 			*tokens_ = tokens + 3;
 			return true;
+		}
+		else
+		{
+			ERROR();
+		}
 	}
 	return false;
 }
@@ -75,7 +81,7 @@ static bool parse_type(token_t **tokens_, type_t **type, symbol_table_t *table)
 			(*type)->is_float = true;
 
 		(*type)->type = AST_TYPE_TYPE;
-		(*type)->name = make_id(tokens[1].string);
+		(*type)->name = make_id(tokens[0].string);
 
 		*tokens_ = tokens + 1;
 		return true;
@@ -97,7 +103,7 @@ static bool parse_decl(token_t **tokens_, decl_t **decl, symbol_table_t *table, 
 			(*decl)->name = make_id(tokens->string);
 			tokens++;
 
-			if(tokens[0].type == TOK_OP && tokens[0].op == OP_EQ)
+			if(tokens[0].type == TOK_ASSIGN)
 			{
 				tokens++;
 				if(!parse_expression(&tokens, &(*decl)->expr, table)) return false;
@@ -342,7 +348,24 @@ static bool parse_bool(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 	return parse_expression(tokens_, ret, table);
 }
 
-static bool parse_conditional(token_t **tokens_, ast_t **ret , symbol_table_t *table)
+static bool parse_else(token_t **tokens_, ast_t **ret , symbol_table_t *table)
+{
+	token_t *tokens = *tokens_;
+	if(IS_KEYWORD(tokens[0], ELSE))
+	{
+		tokens += 1;
+		ast_t *statement;
+		if(IS_NEWLINE(tokens[0])) tokens++;
+		if(parse_statement(&tokens, ret, table))
+		{
+			return true;
+		}
+	}
+	*ret = NULL;
+	return false;
+}
+
+static bool parse_if(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
 	if(IS_KEYWORD(tokens[0], IF) && IS_LPAREN(tokens[1]))
@@ -361,10 +384,39 @@ static bool parse_conditional(token_t **tokens_, ast_t **ret , symbol_table_t *t
 		temp->type      = AST_TYPE_IF;
 		temp->cond      = cond;
 		temp->succ      = statement;
-		temp->fail      = NULL;
+		parse_else(&tokens, &temp->fail, table);
 
 		*ret            = (ast_t*)temp;
 		*tokens_        = tokens;
+		return true;
+	}
+	*ret = NULL;
+	return false;
+}
+
+static bool parse_while(token_t **tokens_, ast_t **ret , symbol_table_t *table)
+{
+	return false;
+}
+static bool parse_do(token_t **tokens_, ast_t **ret , symbol_table_t *table)
+{
+	return false;
+}
+
+static bool parse_for(token_t **tokens_, ast_t **ret , symbol_table_t *table)
+{
+	return false;
+}
+
+static bool parse_conditional(token_t **tokens_, ast_t **ret , symbol_table_t *table)
+{
+	token_t *tokens = *tokens_;
+	if(parse_if(&tokens, ret, table) ||
+	   parse_while(&tokens, ret, table) ||
+	   parse_for(&tokens, ret, table) ||
+	   parse_do(&tokens, ret, table))
+	{
+		*tokens_ = tokens;
 		return true;
 	}
 	*ret = NULL;
@@ -378,8 +430,6 @@ static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *tab
 	{
 		if(tokens[0].type != TOK_SEMICOLON)
 		{
-			print_token(tokens);
-			print_token(tokens + 1);
 			ERROR();
 		}
 		*tokens_ = tokens + 1;
@@ -444,9 +494,8 @@ static bool parse_statement_list(token_t **tokens_, ast_t **out, symbol_table_t 
 	return true;
 }
 
-static bool parse_function(token_t **tokens_, function_t **function, symbol_table_t *table)
+static bool parse_function_proto(token_t **tokens_, function_t **function, symbol_table_t *table)
 {
-	*function = NULL;
 	token_t *tokens = *tokens_;
 	if( IS_KEYWORD(tokens[0], FUNCTION) &&
 		IS_ID(tokens[1]) &&
@@ -472,14 +521,10 @@ static bool parse_function(token_t **tokens_, function_t **function, symbol_tabl
 				}
 				tokens += 1;
 			}
-			if(IS_NEWLINE(tokens[0])) tokens++;
-			ast_t *statements;
-			if(!parse_statement_list(&tokens, &statements, table)) ERROR();
 			function_t *temp = MALLOC_T(function_t);
 			temp->type       = AST_TYPE_FUNCTION;
 			temp->input      = inputs;
 			temp->output     = outputs;
-			temp->statements = statements;
 			temp->name       = make_id(name);
 			temp->table      = NULL;
 			*function = temp;
@@ -487,6 +532,21 @@ static bool parse_function(token_t **tokens_, function_t **function, symbol_tabl
 			return true;
 		}
 	}
+	return false;
+}
+
+static bool parse_function(token_t **tokens_, function_t **function, symbol_table_t *table)
+{
+	token_t *tokens = *tokens_;
+	ast_t *statements;
+	if(parse_function_proto(&tokens, function, table))
+	{
+		if(IS_NEWLINE(tokens[0])) tokens++;
+		if(!parse_statement_list(&tokens, &(*function)->statements, table)) ERROR();
+		*tokens_  = tokens;
+		return true;
+	}
+	*function = NULL;
 	return false;
 }
 

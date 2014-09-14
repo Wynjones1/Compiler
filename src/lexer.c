@@ -8,24 +8,26 @@
 
 static int g_line_count;
 static int g_token_count;
+//WARNING: if you change this, you must chage
+//the keyword enum.
 static const char *kw_strings[] =
 {
-	"if",
-	"else",
-	"function",
-	"do",
-	"while",
-	"from",
-	"import",
-	"namespace",
-	"return",
 	"break",
 	"case",
 	"continue",
 	"default",
+	"do",
+	"else",
+	"from",
+	"function",
+	"if",
+	"import",
+	"namespace",
+	"return",
 	"struct",
 	"typedef",
-	"void"
+	"void",
+	"while",
 };
 
 static char *read_in(FILE *fp)
@@ -90,6 +92,7 @@ void print_token(token_t *token)
 		X(PERIOD);
 		X(NEWLINE);
 		X(COMMA);
+		X(NONE);
 		default:
 			printf("Error Unknown type\n");
 			exit(-1);
@@ -229,12 +232,30 @@ static token_t *read_single(char **pos, token_t *in)
 	return in;
 }
 
+// Check the two next chars, if they match the input params
+// a and b, assign c as the operation type
+#define X(a, b, c)\
+	else if((*pos)[0] == (a) && (*pos)[1] == (b))\
+	{\
+		in[g_token_count].type = TOK_OP;\
+		in[g_token_count].op   = c;\
+		*pos += 2;\
+	}
 static token_t *read_op(char **pos, token_t *in)
 {
 	if((*pos)[0] == '-' && (*pos)[1] == '>')
 	{
 		in[g_token_count].type = TOK_ARROW;
 		*pos += 2;
+	}
+	X('=', '=', OP_EQ)
+	X('!', '=', OP_NEQ)
+	X('<', '=', OP_LTE)
+	X('>', '=', OP_GTE)
+	else if((*pos)[0] == '=')
+	{
+		in[g_token_count].type = TOK_ASSIGN;
+		*pos += 1;
 	}
 	else
 	{
@@ -245,6 +266,7 @@ static token_t *read_op(char **pos, token_t *in)
 	new_token(&in);
 	return in;
 }
+#undef X
 
 static token_t *read_string(char **pos_, token_t *in)
 {

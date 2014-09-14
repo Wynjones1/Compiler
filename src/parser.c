@@ -27,13 +27,9 @@
 
 
 static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *table);
+static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *table);
+static bool parse_statement_list(token_t **tokens_, statement_list_t **out, symbol_table_t *table);
 
-static ast_t *new_ast(void)
-{
-	ast_t *out = MALLOC_T(ast_t);
-	out->type = AST_TYPE_NONE;
-	return out;
-} 
 char *copy_string(const char *string)
 {
 	size_t s = strlen(string);
@@ -51,6 +47,7 @@ static bool parse_import(token_t **tokens_, import_t **import, symbol_table_t *t
 		IS_SEMICOLON(tokens[2]))
 	{
 			*import = MALLOC_T(import_t);
+			(*import)->type = AST_TYPE_IMPORT;
 			(*import)->name = copy_string(tokens[1].string);
 			*tokens_ = tokens + 3;
 			return true;
@@ -68,6 +65,8 @@ static bool parse_type(token_t **tokens_, type_t **type, symbol_table_t *table)
 			(*type)->is_int = true;
 		else if(strcmp(tokens[0].string, "float") == 0)
 			(*type)->is_float = true;
+		(*type)->type = AST_TYPE_TYPE;
+		(*type)->name = copy_string(tokens[0].string);
 		*tokens_ = tokens + 1;
 		return true;
 	}
@@ -83,21 +82,27 @@ static bool parse_decl(token_t **tokens_, decl_t **decl, symbol_table_t *table, 
 		if(IS_ID(tokens[0]))
 		{
 			*decl = MALLOC_T(decl_t);
-			(*decl)->type = type;
+			(*decl)->type = AST_TYPE_DECL;
+			(*decl)->t = type;
 			(*decl)->name = copy_string(tokens[0].string);
-			*tokens_ = tokens + 1;
+			tokens++;
+
+			if(tokens[0].type == TOK_OP && tokens[0].op == OP_EQ)
+			{
+				tokens++;
+				if(!parse_expression(&tokens, &(*decl)->expr, table)) return false;
+			}
+			*tokens_ = tokens;
 			return true;
 		}
 		else if(!need_varname)
 		{
 			*decl = MALLOC_T(decl_t);
-			(*decl)->type = type;
+			(*decl)->type = AST_TYPE_DECL;
+			(*decl)->t = type;
+			(*decl)->name = NULL;
 			*tokens_ = tokens;
 			return true;
-		}
-		else
-		{
-			ERROR(); //Emit more descriptive error.
 		}
 	}
 	return false;
@@ -107,19 +112,22 @@ static bool parse_decl_list(token_t **tokens_, decl_list_t **list, symbol_table_
 {
 	token_t *tokens = *tokens_;
 	decl_t *decl;
+	*list = MALLOC_T(decl_list_t);
+	(*list)->type     = AST_TYPE_DECL_LIST;
+	(*list)->size     = 0;
+	(*list)->decls    = NULL;
 	if(parse_decl(&tokens, &decl, table, need_varname))
 	{
-		*list = MALLOC_T(decl_list_t);
-		(*list)->size     = 1;
-		(*list)->decls    = MALLOC_T(decl_t*);
+		MALLOC_T(decl_t*);
+		(*list)->decls = MALLOC_T(decl_t*);
 		(*list)->decls[0] = decl;
+		(*list)->size = 1;
 		while(IS_COMMA(tokens[0]))
 		{
 			tokens++;
 			if(parse_decl(&tokens, &decl, table, need_varname))
 			{
-				(*list)->size  += 1;
-				(*list)->decls = REALLOC_T((*list)->decls, decl_t*, (*list)->size);
+				(*list)->decls = REALLOC_T((*list)->decls, decl_t*, ++((*list)->size));
 				(*list)->decls[(*list)->size - 1] = decl;
 			}
 			else
@@ -128,9 +136,8 @@ static bool parse_decl_list(token_t **tokens_, decl_list_t **list, symbol_table_
 			}
 		}
 		*tokens_ = tokens;
-		return true;
 	}
-	return false;
+	return true;
 }
 
 static bool parse_return(token_t **tokens_, ast_t **ret , symbol_table_t *table)
@@ -140,15 +147,19 @@ static bool parse_return(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 	{
 		ast_t *expr;
 		tokens++;
+		return_t *temp = MALLOC_T(return_t);
+		temp->type = AST_TYPE_RETURN;
 		if(parse_expression(&tokens, &expr, table))
 		{
-			return_t *temp = MALLOC_T(return_t);
-			temp->type = AST_TYPE_RETURN;
 			temp->expr = expr;
-			*ret = (ast_t*)temp;
-			*tokens_ = tokens;
-			return true;
 		}
+		else
+		{
+			temp->expr = NULL;
+		}
+		*ret = (ast_t*)temp;
+		*tokens_ = tokens;
+		return true;
 	}
 	*ret = NULL;
 	return false;
@@ -173,15 +184,24 @@ static bool parse_param_list(token_t **tokens_, param_list_t *ret , symbol_table
 	return true;
 }
 
-static bool parse_function_call(token_t **tokens_, function_call_t **ret , symbol_table_t *table)
+static bool parse_function_call(token_t **tokens_, ast_t *call, function_call_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
 	if(IS_LPAREN(tokens[0])) //Function Call
 	{
 		param_list_t list;
+		tokens++;
 		if(parse_param_list(&tokens, &list, table))
 		{
-
+			if(IS_RPAREN(tokens[0]))
+			{
+				*ret = MALLOC_T(function_call_t);
+				(*ret)->type = AST_TYPE_FUNC_CALL;
+				(*ret)->call = call;
+				(*ret)->params = list;
+				*tokens_ = tokens + 1;
+				return true;
+			}
 		}
 	}
 	return false;
@@ -223,8 +243,16 @@ static bool parse_binop(token_t **tokens_, ast_t *left, binop_t **ret, symbol_ta
 			binop->left    = left;
 			binop->right   = right;
 			binop->op      = op;
-			*tokens_       = tokens;
-			*ret = binop;
+			if(binop->right->type == AST_TYPE_BINOP &&
+				binop->op == OP_MUL && ((binop_t*)binop->right)->op == OP_ADD)
+			{
+				binop_t *temp = (binop_t*)binop->right;
+				binop->right  = temp->left;
+				temp->left    = (ast_t*)binop;
+				binop = (binop_t*)temp;
+			}
+			*tokens_ = tokens;
+			*ret     = binop;
 			return true;
 		}
 	}
@@ -266,9 +294,16 @@ static bool parse_id(token_t **tokens_, identifier_t **id, symbol_table_t *table
 static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
-	ast_t *expr;
+	ast_t  *expr;
+	decl_t *decl;
 	if(parse_return(&tokens, ret, table))
 	{
+		*tokens_ = tokens;
+		return true;
+	}
+	if( parse_decl(&tokens, &decl, table, true))
+	{
+		*ret = (ast_t*)decl;
 		*tokens_ = tokens;
 		return true;
 	}
@@ -278,9 +313,8 @@ static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *ta
 	{
 		function_call_t *func_call;
 		binop_t         *binop;
-		while(parse_function_call(&tokens, &func_call, table))
+		while(parse_function_call(&tokens, expr, &func_call, table))
 		{
-			func_call->call = expr;
 			expr = (ast_t*) func_call;
 		}
 		if(parse_binop(&tokens, expr, &binop, table))
@@ -294,13 +328,63 @@ static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *ta
 	return false;
 }
 
+static bool parse_bool(token_t **tokens_, ast_t **ret , symbol_table_t *table)
+{
+	//TODO:Fix
+	return parse_expression(tokens_, ret, table);
+}
+
+static bool parse_conditional(token_t **tokens_, ast_t **ret , symbol_table_t *table)
+{
+	token_t *tokens = *tokens_;
+	if(IS_KEYWORD(tokens[0], IF) && IS_LPAREN(tokens[1]))
+	{
+		tokens += 2;
+		ast_t *cond;
+		ast_t *statement;
+		if_t *temp;
+		if(!parse_bool(&tokens, &cond, table)) return false;
+		if(!IS_RPAREN(tokens[0])) return false;
+		tokens++;
+		if(IS_NEWLINE(tokens[0])) tokens++;
+		if(!parse_statement(&tokens, &statement, table)) return false;
+
+		temp            = MALLOC_T(if_t);
+		temp->type      = AST_TYPE_IF;
+		temp->cond      = cond;
+		temp->succ      = statement;
+		temp->fail      = NULL;
+
+		*ret            = (ast_t*)temp;
+		*tokens_        = tokens;
+		return true;
+	}
+	*ret = NULL;
+	return false;
+}
+
 static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
 	if(parse_expression(&tokens, ret, table))
 	{
-		if(tokens[0].type != TOK_SEMICOLON) ERROR();
+		if(tokens[0].type != TOK_SEMICOLON)
+		{
+			print_token(tokens);
+			print_token(tokens + 1);
+			ERROR();
+		}
 		*tokens_ = tokens + 1;
+		return true;
+	}
+	if(parse_conditional(&tokens, ret, table))
+	{
+		*tokens_ = tokens;
+		return true;
+	}
+	if(parse_statement_list(&tokens, (statement_list_t**)ret, table))
+	{
+		*tokens_ = tokens;
 		return true;
 	}
 	*ret = NULL;
@@ -316,7 +400,7 @@ static bool parse_statement_list(token_t **tokens_, statement_list_t **out, symb
 		return false;
 	}
 	tokens++;
-	ast_t **statements;
+	ast_t **statements = NULL;
 	statement_list_t *list;
 	ast_t *statement;
 	int size = 0;
@@ -341,7 +425,7 @@ static bool parse_statement_list(token_t **tokens_, statement_list_t **out, symb
 	list->statements = statements;
 
 	*out     = list;
-	*tokens_ = tokens;
+	*tokens_ = tokens + 1;
 	return true;
 }
 
@@ -353,7 +437,7 @@ static bool parse_function(token_t **tokens_, function_t **function, symbol_tabl
 		IS_ID(tokens[1]) &&
 		IS_LPAREN(tokens[2]))
 	{
-		const char *name = tokens[1].string;
+		char *name = copy_string(tokens[1].string);
 		tokens += 3;
 		decl_list_t *inputs, *outputs;
 		if(parse_decl_list(&tokens, &inputs, table, true))
@@ -381,6 +465,9 @@ static bool parse_function(token_t **tokens_, function_t **function, symbol_tabl
 			temp->input      = inputs;
 			temp->output     = outputs;
 			temp->statements = statements;
+			temp->name       = MALLOC_T(identifier_t);
+			temp->name->name = name;
+			temp->name->type = AST_TYPE_ID;
 			temp->table      = NULL;
 			*function = temp;
 			*tokens_  = tokens;

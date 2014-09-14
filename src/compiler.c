@@ -21,6 +21,10 @@ void compile(const char *input_file, const char *output_file)
 	}
 	token_t   *tokens  = tokenise(in_fp);
 	program_t *program = parse(tokens);
+	FILE *fp = fopen("parse.tree", "w");
+	printf("Finished Parsing.\n");
+	fflush(stdout);
+	ast_print(program, fp);
 	fclose(out_fp);
 	fclose(in_fp);
 }

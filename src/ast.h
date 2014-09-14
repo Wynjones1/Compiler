@@ -11,6 +11,7 @@ enum AST_TYPE
 {
 	AST_TYPE_ID,
 	AST_TYPE_FUNCTION,
+	AST_TYPE_FUNC_CALL,
 	AST_TYPE_BINOP,
 	AST_TYPE_NONE,
 	AST_TYPE_TYPE,
@@ -21,6 +22,12 @@ enum AST_TYPE
 	AST_TYPE_STATEMENT_LIST,
 	AST_TYPE_RETURN,
 	AST_TYPE_PROGRAM,
+	AST_TYPE_DECL,
+	AST_TYPE_DECL_LIST,
+	AST_TYPE_IF,
+	AST_TYPE_WHILE,
+	AST_TYPE_FOR,
+	AST_TYPE_DO,
 	NUM_AST_TYPES
 };
 
@@ -33,11 +40,13 @@ enum TYPE_MOD
 
 typedef struct import
 {
-	const char *name;
+	enum AST_TYPE  type;
+	const char    *name;
 }import_t;
 
 struct type
 {
+	enum AST_TYPE type;
 	enum TYPE_MOD mod;
 	bool is_constant;
 	bool is_static;
@@ -69,6 +78,7 @@ typedef struct param_list
 
 typedef struct function_call
 {
+	enum AST_TYPE type;
 	ast_t *call;
 	param_list_t params;
 }function_call_t;
@@ -83,18 +93,22 @@ typedef struct binop
 
 typedef struct decl
 {
-	type_t     *type;
+	enum AST_TYPE type;
+	type_t     *t;
 	const char *name;
+	ast_t      *expr;
 }decl_t;
 
 typedef struct decl_list
 {
+	enum AST_TYPE type;
 	int size;
 	decl_t **decls;
 }decl_list_t;
 
 typedef struct if_s
 {
+	enum AST_TYPE type;
 	ast_t *cond;
 	ast_t *succ;
 	ast_t *fail;
@@ -113,10 +127,18 @@ typedef struct statement_list
 	ast_t **statements;
 }statement_list_t;
 
+typedef struct identifier
+{
+	enum AST_TYPE type;
+	const char *name;
+}identifier_t;
+
+
 typedef struct function
 {
 	enum AST_TYPE type;
 	int size;
+	identifier_t     *name;
 	decl_list_t      *input;
 	decl_list_t      *output;
 	statement_list_t *statements;
@@ -134,12 +156,6 @@ typedef struct literal
 	};
 }literal_t;
 
-typedef struct identifier
-{
-	enum AST_TYPE type;
-	const char *name;
-}identifier_t;
-
 typedef struct program
 {
 	enum AST_TYPE type;
@@ -149,20 +165,5 @@ typedef struct program
 	function_t  **functions;
 }program_t;
 
-#if 0
-	union
-	{
-		while_t           ast_while;
-		if_t              ast_if;
-		decl_t            decl;
-		binop_t           binop;
-		function_t        function;
-		function_call_t   call;
-		program_t         program;
-		struct ast       *expr;
-		statement_list_t  statements;
-		const char       *string;
-		int               integer;
-		float             flt;
-	};
-#endif
+#define ast_print(ast, fp) ast_print_((ast_t*)ast, fp);
+void ast_print_(ast_t *ast, FILE *fp);

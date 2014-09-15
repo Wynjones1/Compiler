@@ -3,12 +3,16 @@ import json
 import pydot
 
 def build_tree(program, parent = None, graph = None):
-	if(graph == None):
-		graph = pydot.Dot()
+	if 0:
+		if(graph == None):
+			graph = pydot.Dot()
+		else:
+			temp = pydot.Cluster()
+			graph.add_subgraph(temp)
+			graph = temp
 	else:
-		temp = pydot.Cluster()
-		graph.add_subgraph(temp)
-		graph = temp
+		if(graph == None):
+			graph = pydot.Dot()
 	name = program[0]
 	rest = program[1:]
 	node = pydot.Node(name)

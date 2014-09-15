@@ -175,6 +175,27 @@ static int is_keyword(const char *string)
 	return -1;
 }
 
+static int is_op_string(const char *string)
+{
+	if(strcmp(string, "or") == 0)
+	{
+		return OP_OR;
+	}
+	else if(strcmp(string, "and") == 0)
+	{
+		return OP_AND;
+	}
+	else if(strcmp(string, "not") == 0)
+	{
+		return OP_NOT;
+	}
+	else if(strcmp(string, "xor") == 0)
+	{
+		return OP_XOR;
+	}
+	return -1;
+}
+
 static token_t *read_id(char **pos_, token_t *in)
 {
 	char c;
@@ -188,11 +209,18 @@ static token_t *read_id(char **pos_, token_t *in)
 			in[g_token_count].type   = TOK_ID;
 			memcpy(string, *pos_, pos - *pos_ - 1);
 			int kw = is_keyword(string);
-			if(is_keyword(string) >= 0)
+			int op = is_op_string(string);
+			if(is_keyword(string) > -1)
 			{
 				free(string);
 				in[g_token_count].type = TOK_KEYWORD;
 				in[g_token_count].kw   = (enum KW) kw;
+			}
+			else if(op > -1)
+			{
+				free(string);
+				in[g_token_count].type = TOK_OP;
+				in[g_token_count].op   = (enum OP) op;
 			}
 			new_token(&in);
 			*pos_ = pos - 1;

@@ -23,7 +23,7 @@
 						      (token).type == TOK_FLOAT ||\
 						      (token).type == TOK_STRING)
 
-#define ERROR() do{fflush(stdout); fprintf(stderr, "Error %s %d\n", __FILE__, __LINE__); exit(-1);}while(0);
+#define ERROR() do{print_token(tokens); fflush(stdout); fprintf(stderr, "Error %s %d\n", __FILE__, __LINE__); exit(-1);}while(0);
 
 
 static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *table);
@@ -358,8 +358,10 @@ static bool parse_else(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 		if(IS_NEWLINE(tokens[0])) tokens++;
 		if(parse_statement(&tokens, ret, table))
 		{
+			*tokens_ = tokens;
 			return true;
 		}
+		ERROR();
 	}
 	*ret = NULL;
 	return false;
@@ -368,22 +370,28 @@ static bool parse_else(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 static bool parse_if(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
-	if(IS_KEYWORD(tokens[0], IF) && IS_LPAREN(tokens[1]))
+	if(IS_KEYWORD(tokens[0], IF))
 	{
+		if(!IS_LPAREN(tokens[1]))
+		{
+			//TODO:IF Warning.
+			ERROR();
+		}
 		tokens += 2;
 		ast_t *cond;
 		ast_t *statement;
 		if_t *temp;
-		if(!parse_bool(&tokens, &cond, table)) return false;
-		if(!IS_RPAREN(tokens[0])) return false;
+		if(!parse_bool(&tokens, &cond, table)) ERROR();
+		if(!IS_RPAREN(tokens[0])) ERROR();
 		tokens++;
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(!parse_statement(&tokens, &statement, table)) return false;
+		if(!parse_statement(&tokens, &statement, table)) ERROR();
 
 		temp            = MALLOC_T(if_t);
 		temp->type      = AST_TYPE_IF;
 		temp->cond      = cond;
 		temp->succ      = statement;
+		while(IS_NEWLINE(tokens[0]))tokens++;
 		parse_else(&tokens, &temp->fail, table);
 
 		*ret            = (ast_t*)temp;
@@ -445,8 +453,7 @@ static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *tab
 		*tokens_ = tokens;
 		return true;
 	}
-	*ret = NULL;
-	return false;
+	ERROR();
 }
 
 static bool parse_statement_list(token_t **tokens_, ast_t **out, symbol_table_t *table)
@@ -467,13 +474,10 @@ static bool parse_statement_list(token_t **tokens_, ast_t **out, symbol_table_t 
 		while(IS_NEWLINE(tokens[0])) tokens++;
 		statements = REALLOC_T(statements, ast_t*, ++size);
 		statements[size - 1] = statement;
-	}
-
-	if(!IS_RBRACE(tokens[0]))
-	{
-		//TODO:Cleanup.
-		*out = NULL;
-		return false;
+		if(IS_RBRACE(tokens[0]))
+		{
+			break;
+		}
 	}
 
 	if(size == 1)

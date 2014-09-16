@@ -9,7 +9,7 @@ typedef struct type type_t;
 
 enum AST_TYPE
 {
-	AST_TYPE_NONE,
+	AST_TYPE_ASSIGN,
 	AST_TYPE_BINOP,
 	AST_TYPE_DECL,
 	AST_TYPE_DECL_LIST,
@@ -22,6 +22,8 @@ enum AST_TYPE
 	AST_TYPE_IF,
 	AST_TYPE_IMPORT,
 	AST_TYPE_INTEGER,
+	AST_TYPE_LIST,
+	AST_TYPE_NONE,
 	AST_TYPE_PROGRAM,
 	AST_TYPE_RETURN,
 	AST_TYPE_STATEMENT_LIST,
@@ -44,6 +46,18 @@ struct ast
 	enum AST_TYPE type;
 };
 
+typedef struct ast_list
+{
+	enum AST_TYPE type;
+	int size;
+	ast_t **exprs;
+}ast_list_t;
+
+typedef struct ast_list param_list_t;
+typedef struct ast_list decl_list_t;
+typedef struct ast_list statement_list_t;
+typedef struct ast_list expr_list_t;
+
 typedef struct identifier
 {
 	enum AST_TYPE type;
@@ -52,8 +66,10 @@ typedef struct identifier
 
 typedef struct import
 {
-	enum AST_TYPE  type;
-	identifier_t  *name;
+	enum AST_TYPE    type;
+	bool             add_to_global;
+	identifier_t    *name;
+	identifier_t    *to_import;
 }import_t;
 
 struct type
@@ -77,11 +93,13 @@ typedef struct return_s
 	ast_t        *expr;
 }return_t;
 
-typedef struct param_list
+
+typedef struct assign
 {
-	int size;
-	ast_t **exprs;
-}param_list_t;
+	enum AST_TYPE type;
+	identifier_t  *id;
+	ast_t         *expr;
+}assign_t;
 
 typedef struct function_call
 {
@@ -106,12 +124,6 @@ typedef struct decl
 	ast_t        *expr;
 }decl_t;
 
-typedef struct decl_list
-{
-	enum AST_TYPE type;
-	int size;
-	decl_t **decls;
-}decl_list_t;
 
 typedef struct if_s
 {
@@ -123,16 +135,26 @@ typedef struct if_s
 
 typedef struct while_s
 {
-	ast_t *invariant;
+	enum AST_TYPE type;
+	ast_t *cond;
 	ast_t *statement;
 }while_t;
 
-typedef struct statement_list
+typedef struct  for_s
 {
 	enum AST_TYPE type;
-	int size;
-	ast_t **statements;
-}statement_list_t;
+	ast_t *init;
+	ast_t *cond;
+	ast_t *post;
+	ast_t *expr;
+}for_t;
+
+typedef struct do_s
+{
+	enum AST_TYPE type;
+	ast_t *cond;
+	ast_t *statement;
+}do_t;
 
 typedef struct function
 {

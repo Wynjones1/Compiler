@@ -18,6 +18,7 @@ static const char *kw_strings[] =
 	"default",
 	"do",
 	"else",
+	"for",
 	"from",
 	"function",
 	"if",
@@ -83,6 +84,7 @@ void print_token(token_t *token)
 			printf("KW: %s\n", kw_strings[token->kw]);
 			break;
 		X(ARROW);
+		X(ASSIGN);
 		X(LPAREN);
 		X(RPAREN);
 		X(LBRACE);
@@ -153,7 +155,7 @@ static token_t *read_int(char **pos_, token_t *in)
 	{
 		read_float(pos_, in);
 	}
-	else if(isseperator(c) || c == 'x')
+	else if(isseperator(c) || (c == 'x' && isdigit(pos[idx])) || c == '/' && pos[idx] == '*')
 	{
 		in[g_token_count].integer = strtol(*pos_, pos_, 0);
 		in[g_token_count].type    = TOK_INTEGER;
@@ -336,6 +338,16 @@ token_t *tokenise(FILE *fp)
 	char cur;
 	while(*pos)
 	{
+		if(pos[0] == '/' &&  pos[1] == '*')
+		{
+			pos += 2;
+			while(pos[0] && (pos[0] != '*'  && pos[1] != '/'))
+			{
+				   pos++;
+			}
+			if(!pos[0] || !pos[1]) unexpected_end_error();
+			pos += 2;
+		}
 		if(isdigit(*pos))
 		{
 			out = read_int(&pos, out);

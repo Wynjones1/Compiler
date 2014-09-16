@@ -2,7 +2,7 @@ all: build
 	cd build; make
 
 run: all
-	./bin/compiler -i ./tests/fib.c
+	./bin/compiler
 
 build:
 	mkdir -p build

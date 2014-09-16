@@ -36,6 +36,7 @@ enum KW
 	KW_DEFAULT,
 	KW_DO,
 	KW_ELSE,
+	KW_FOR,
 	KW_FROM,
 	KW_FUNCTION,
 	KW_IF,

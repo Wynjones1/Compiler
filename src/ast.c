@@ -85,11 +85,7 @@ static void print_DECL_LIST(ast_t *ast, FILE *fp)
 static void print_BINOP(ast_t *ast, FILE *fp)
 {
 	binop_t *binop = (binop_t*) ast;
-#if 0
-	PRINT("BINOP %c", (char)binop->op);
-#else
-	PRINT("BINOP ");
-#endif
+	PRINT("%s", get_binop_string(binop->op));
 	ast_print(binop->left, fp);
 	ast_print(binop->right, fp);
 }

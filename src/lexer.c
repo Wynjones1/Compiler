@@ -10,6 +10,7 @@ static int g_line_count;
 static int g_token_count;
 //WARNING: if you change this, you must chage
 //the keyword enum.
+
 static const char *kw_strings[] =
 {
 	"break",
@@ -262,6 +263,33 @@ static token_t *read_single(char **pos, token_t *in)
 	return in;
 }
 
+#define X(c, op)\
+	case c:\
+		return op
+static enum OP char_to_op(char c)
+{
+	switch(c)
+	{
+		X('+',OP_ADD);
+		X('&',OP_BIT_AND);
+		X('!',OP_BIT_NOT);
+		X('|',OP_BIT_OR);
+		X('^',OP_BIT_XOR);
+		X('/',OP_DIV);
+		X('=',OP_EQ);
+		X('>',OP_GT);
+		X('<',OP_LT);
+		X('%',OP_MOD);
+		X('*',OP_MUL);
+		X('~',OP_NOT);
+		X('?',OP_QU);
+		X('-',OP_SUB);
+		default:
+			fprintf(stderr, "Not a single char operation.\n");
+			exit;
+	}
+}
+#undef X
 // Check the two next chars, if they match the input params
 // a and b, assign c as the operation type
 #define X(a, b, c)\
@@ -290,7 +318,7 @@ static token_t *read_op(char **pos, token_t *in)
 	else
 	{
 		in[g_token_count].type = TOK_OP;
-		in[g_token_count].op   = (enum OP) **pos;
+		in[g_token_count].op   = char_to_op(**pos);
 		(*pos)++;
 	}
 	new_token(&in);
@@ -341,9 +369,9 @@ token_t *tokenise(FILE *fp)
 		if(pos[0] == '/' &&  pos[1] == '*')
 		{
 			pos += 2;
-			while(pos[0] && (pos[0] != '*'  && pos[1] != '/'))
+			while(pos[0] && !(pos[0] == '*'  && pos[1] == '/'))
 			{
-				   pos++;
+			   pos++;
 			}
 			if(!pos[0] || !pos[1]) unexpected_end_error();
 			pos += 2;
@@ -393,3 +421,80 @@ token_t *tokenise(FILE *fp)
 	}
 	return out;
 }
+
+int op_precedence(enum OP op)
+{
+	switch(op)
+	{
+	case OP_NOT:
+	case OP_BIT_NOT:
+		return 2;
+	case OP_MUL:
+	case OP_DIV:
+	case OP_MOD:
+		return 3;
+	case OP_ADD:
+	case OP_SUB:
+		return 4;
+	case OP_LSHIFT:
+	case OP_RSHIFT:
+		return 5;
+	case OP_GT:
+	case OP_GTE:
+	case OP_LT:
+	case OP_LTE:
+		return 6;
+	case OP_EQ:
+	case OP_NEQ:
+		return 7;
+	case OP_BIT_AND:
+		return 8;
+	case OP_BIT_XOR:
+		return 9;
+	case OP_BIT_OR:
+		return 10;
+	case OP_AND:
+		return 11;
+	case OP_XOR:
+		return 12;
+	case OP_OR:
+		return 13;
+	case OP_QU:
+		return 14;
+	default:
+		fprintf(stderr, "Invalid op type.\n");
+		exit(-1);
+	}
+}
+
+#define X(op) case OP_ ## op:\
+					return #op;
+const char *get_binop_string(enum OP op)
+{
+	switch(op)
+	{
+		X(NOT);
+		X(BIT_NOT);
+		X(MUL);
+		X(DIV);
+		X(MOD);
+		X(ADD);
+		X(SUB);
+		X(LSHIFT);
+		X(RSHIFT);
+		X(GT);
+		X(GTE);
+		X(LT);
+		X(LTE);
+		X(EQ);
+		X(NEQ);
+		X(BIT_AND);
+		X(BIT_XOR);
+		X(BIT_OR);
+		X(AND);
+		X(XOR);
+		X(OR);
+		X(QU);
+	}
+}
+#undef X

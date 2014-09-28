@@ -50,29 +50,46 @@ enum KW
 	NUM_KEYWORDS
 };
 
+//IMPORTANT!!! If changed you must alter string array in lexer.c too.
 enum OP
 {
-	OP_ADD     = '+',
-	OP_AND,
-	OP_BIT_AND = '&',
-	OP_BIT_NOT = '~',
-	OP_BIT_OR  = '|',
-	OP_BIT_XOR = '^',
-	OP_DIV     = '/',
-	OP_EQ      = '=',
-	OP_GT      = '>',
+	OP_NOT,
+	OP_BIT_NOT,
+
+	OP_MUL,
+	OP_DIV,
+	OP_MOD,
+
+	OP_ADD,
+	OP_SUB,
+
+	OP_LSHIFT,
+	OP_RSHIFT,
+
+	OP_GT,
 	OP_GTE,
-	OP_LT      = '<',
-	OP_LTE,    
-	OP_MOD     = '%',
-	OP_MUL     = '*',
-	OP_NEQ,    
-	OP_NOT     = '!',
-	OP_OR,
-	OP_QU      = '?',
-	OP_SUB     = '-',
+	OP_LT,
+	OP_LTE,
+
+	OP_EQ,
+	OP_NEQ,
+
+	OP_BIT_AND,
+
+	OP_BIT_XOR,
+
+	OP_BIT_OR,
+
+	OP_AND,
+
 	OP_XOR,
+
+	OP_OR,
+
+	OP_QU,
 };
+
+const char *get_binop_string(enum OP op);
 
 typedef struct token
 {
@@ -90,3 +107,4 @@ typedef struct token
 
 token_t *tokenise(FILE *fp);
 void print_token(token_t *token);
+int op_precedence(enum OP op);

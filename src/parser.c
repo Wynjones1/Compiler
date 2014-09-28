@@ -30,6 +30,9 @@ static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *ta
 static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *table);
 static bool parse_statement_list(token_t **tokens_, ast_t **out, symbol_table_t *table);
 static bool parse_assignment(token_t **tokens_, ast_t **ret , symbol_table_t *table);
+static bool parse_id(token_t **tokens_, identifier_t **id, symbol_table_t *table);
+static bool parse_literal(token_t **tokens_, literal_t **ret , symbol_table_t *table);
+static bool parse_paren_expression(token_t **tokens_, ast_t **ret , symbol_table_t *table);
 
 char *copy_string(const char *string)
 {
@@ -278,6 +281,30 @@ static bool parse_function_call(token_t **tokens_, ast_t *call, function_call_t 
 	return false;
 }
 
+static bool parse_term(token_t **tokens_, ast_t **ret, symbol_table_t *table)
+{
+	token_t *tokens = *tokens_;
+	ast_t *temp;
+	if(parse_id(&tokens, (identifier_t**) &temp, table)    ||
+		parse_paren_expression(&tokens, &temp, table))
+	{
+		ast_t *call;
+		while(parse_function_call(&tokens, temp, (function_call_t**) &call, table))
+		{
+			temp = call;
+		}
+		*tokens_ = tokens;
+		*ret = temp;
+		return true;
+	}
+	else if(parse_literal(&tokens, (literal_t**) ret, table))
+	{
+		*tokens_ = tokens;
+		return true;
+	}
+	return false;
+}
+
 static bool parse_paren_expression(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
@@ -297,38 +324,6 @@ static bool parse_paren_expression(token_t **tokens_, ast_t **ret , symbol_table
 	return false;
 }
 
-static bool parse_binop(token_t **tokens_, ast_t *left, binop_t **ret, symbol_table_t *table)
-{
-	token_t *tokens = *tokens_;
-	if(tokens->type == TOK_OP) //Binop
-	{
-		enum OP op = tokens->op;
-		tokens++;
-		ast_t *right;
-		if(parse_expression(&tokens, &right, table))
-		{
-			//TODO:Sort out the precidence rules.
-			//TODO:Convert to comparison if needed.
-			binop_t *binop = MALLOC_T(binop_t);
-			binop->type    = AST_TYPE_BINOP;
-			binop->left    = left;
-			binop->right   = right;
-			binop->op      = op;
-			if(binop->right->type == AST_TYPE_BINOP &&
-				binop->op == OP_MUL && ((binop_t*)binop->right)->op == OP_ADD)
-			{
-				binop_t *temp = (binop_t*)binop->right;
-				binop->right  = temp->left;
-				temp->left    = (ast_t*)binop;
-				binop = (binop_t*)temp;
-			}
-			*tokens_ = tokens;
-			*ret     = binop;
-			return true;
-		}
-	}
-	return false;
-}
 
 #define X(NAME, field)\
 	if(IS_ ## NAME(tokens[0]))\
@@ -360,43 +355,103 @@ static bool parse_id(token_t **tokens_, identifier_t **id, symbol_table_t *table
 	return false;
 }
 
+static bool parse_sub_binop(token_t **tokens_, ast_t *left, binop_t **ret, symbol_table_t *table)
+{
+	token_t *tokens = *tokens_;
+	ast_t *right;
+	enum OP op;
+again:
+	op = tokens->op;
+	tokens++;
+	if(!parse_term(&tokens, &right, table)) ERROR();
+	if(tokens->type != TOK_OP)
+	{
+		binop_t *out = MALLOC_T(binop_t);
+		out->type    = AST_TYPE_BINOP;
+		out->op      = op;
+		out->left    = left;
+		out->right   = right;
+		*tokens_     = tokens;
+		*ret         = out;
+		return true;
+	}
+	if(op_precedence(tokens->op) == op_precedence(op))
+	{
+		binop_t *temp = MALLOC_T(binop_t);
+		temp->type    = AST_TYPE_BINOP;
+		temp->op      = op;
+		temp->left    = left;
+		temp->right   = right;
+		left          = (ast_t*)temp;
+		goto again;
+	}
+	else if(op_precedence(tokens->op) > op_precedence(op))
+	{
+		binop_t *temp = MALLOC_T(binop_t);
+		temp->type    = AST_TYPE_BINOP;
+		temp->op      = op;
+		temp->left    = left;
+		temp->right   = right;
+		*ret          = temp;
+		*tokens_      = tokens;
+		return true;
+	}
+	else
+	{
+		binop_t *temp = MALLOC_T(binop_t);
+		temp->type    = AST_TYPE_BINOP;
+		temp->op      = op;
+		temp->left    = left;
+		left          = (ast_t*)temp;
+		if(!parse_sub_binop(&tokens, right, &temp, table)) ERROR();
+		((binop_t*)left)->right = (ast_t*)temp;
+		*ret = (binop_t*)left;
+		*tokens_ = tokens;
+		return true;
+	}
+}
+
+static bool parse_binop(token_t **tokens_, binop_t **ret, symbol_table_t *table)
+{
+	token_t *tokens = *tokens_;
+	ast_t *left, *right;
+	if(parse_term(&tokens, &left, table))
+	{
+again:
+		if(tokens->type == TOK_OP)
+		{
+			if(!parse_sub_binop(&tokens, left, (binop_t**)&right, table)) ERROR();
+			if(tokens->type == TOK_OP)
+			{
+				left = right;
+				goto again;
+			}
+			*tokens_ = tokens;
+			*ret = (binop_t*)right;
+			return true;
+		}
+	}
+	return false;
+}
+
 static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
 	ast_t  *expr;
 	decl_t *decl;
-	if(parse_return(&tokens, ret, table))
-	{
-		*tokens_ = tokens;
-		return true;
-	}
-	if( parse_decl(&tokens, &decl, table, true))
-	{
-		*ret = (ast_t*)decl;
-		*tokens_ = tokens;
-		return true;
-	}
+	binop_t *left, *right;
 	if( parse_assignment(&tokens, &expr, table))
 	{
 		ERROR();
 	}
-	if( parse_paren_expression(&tokens, &expr, table)     ||
-		parse_literal(&tokens, (literal_t**)&expr, table) ||
-		parse_id(&tokens, (identifier_t**)&expr, table))
+	if(parse_binop(&tokens, (binop_t**)&expr, table))
 	{
-		function_call_t *func_call;
-		binop_t         *binop;
-		while(parse_function_call(&tokens, expr, &func_call, table))
-		{
-			expr = (ast_t*) func_call;
-		}
-		if(parse_binop(&tokens, expr, &binop, table))
-		{
-			expr = (ast_t*) binop;
-		}
 		*ret     = expr;
 		*tokens_ = tokens;
 		return true;
+	}
+	if(parse_term(&tokens, &expr, table))
+	{
 	}
 	return false;
 }
@@ -591,6 +646,24 @@ static bool parse_assignment(token_t **tokens_, ast_t **ret , symbol_table_t *ta
 static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
+	if(parse_return(&tokens, ret, table))
+	{
+		if(tokens[0].type != TOK_SEMICOLON)
+		{
+			ERROR();
+		}
+		*tokens_ = tokens + 1;
+		return true;
+	}
+	if( parse_decl(&tokens, (decl_t**)ret, table, true))
+	{
+		if(tokens[0].type != TOK_SEMICOLON)
+		{
+			ERROR();
+		}
+		*tokens_ = tokens + 1;
+		return true;
+	}
 	if( parse_assignment(&tokens, ret, table) ||
 		parse_expression(&tokens, ret, table))
 	{

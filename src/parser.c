@@ -355,6 +355,23 @@ static bool parse_id(token_t **tokens_, identifier_t **id, symbol_table_t *table
 	return false;
 }
 
+binop_t *make_binop(enum OP op, ast_t *left, ast_t *right)
+{
+	binop_t *out = MALLOC_T(binop_t);
+	out->type    = AST_TYPE_BINOP;
+	out->op      = op;
+	out->left    = left;
+	out->right   = right;
+	return out;
+}
+
+static int comp_precedence(enum OP op0, enum OP op1)
+{
+	if(op_precedence(op0) == op_precedence(op1)) return 0;
+	if(op_precedence(op0) <  op_precedence(op1))  return -1;
+	return 1;
+}
+
 static bool parse_sub_binop(token_t **tokens_, ast_t *left, binop_t **ret, symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
@@ -366,44 +383,34 @@ again:
 	if(!parse_term(&tokens, &right, table)) ERROR();
 	if(tokens->type != TOK_OP)
 	{
-		binop_t *out = MALLOC_T(binop_t);
-		out->type    = AST_TYPE_BINOP;
-		out->op      = op;
-		out->left    = left;
-		out->right   = right;
+		binop_t *out = make_binop(op, left, right);
 		*tokens_     = tokens;
 		*ret         = out;
 		return true;
 	}
 	if(op_precedence(tokens->op) == op_precedence(op))
 	{
-		binop_t *temp = MALLOC_T(binop_t);
-		temp->type    = AST_TYPE_BINOP;
-		temp->op      = op;
-		temp->left    = left;
-		temp->right   = right;
+		binop_t *temp = make_binop(op, left, right);
 		left          = (ast_t*)temp;
 		goto again;
 	}
 	else if(op_precedence(tokens->op) > op_precedence(op))
 	{
-		binop_t *temp = MALLOC_T(binop_t);
-		temp->type    = AST_TYPE_BINOP;
-		temp->op      = op;
-		temp->left    = left;
-		temp->right   = right;
+		binop_t *temp = make_binop(op, left, right);
 		*ret          = temp;
 		*tokens_      = tokens;
 		return true;
 	}
 	else
 	{
-		binop_t *temp = MALLOC_T(binop_t);
-		temp->type    = AST_TYPE_BINOP;
-		temp->op      = op;
-		temp->left    = left;
-		left          = (ast_t*)temp;
+		binop_t *temp;
+		left = (ast_t*) make_binop(op, left, NULL);
 		if(!parse_sub_binop(&tokens, right, &temp, table)) ERROR();
+		while(tokens[0].type == TOK_OP &&
+			op_precedence(tokens->op) < op_precedence(((binop_t*)left)->op))
+		{
+			if(!parse_sub_binop(&tokens, (ast_t*)temp, &temp, table)) ERROR();
+		}
 		((binop_t*)left)->right = (ast_t*)temp;
 		*ret = (binop_t*)left;
 		*tokens_ = tokens;
@@ -444,14 +451,12 @@ static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *ta
 	{
 		ERROR();
 	}
-	if(parse_binop(&tokens, (binop_t**)&expr, table))
+	if( parse_binop(&tokens, (binop_t**)&expr, table) ||
+		parse_term(&tokens, &expr, table))
 	{
 		*ret     = expr;
 		*tokens_ = tokens;
 		return true;
-	}
-	if(parse_term(&tokens, &expr, table))
-	{
 	}
 	return false;
 }

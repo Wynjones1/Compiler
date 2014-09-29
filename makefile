@@ -9,7 +9,7 @@ build:
 	mkdir -p build
 	cd build; cmake ..
 
-tree: run
+tree:
 	./scripts/display_parse_tree.py
 
 view: tree

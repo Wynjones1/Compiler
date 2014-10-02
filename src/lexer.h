@@ -3,6 +3,13 @@
 #include <stdio.h>
 #define VERBOSE_LEXER 0
 
+enum ASSOC
+{
+	ASSOC_LEFT,
+	ASSOC_RIGHT,
+	ASSOC_NONE
+};
+
 enum TOK
 {
 	TOK_ASSIGN,
@@ -32,6 +39,7 @@ enum KW
 {
 	KW_BREAK,
 	KW_CASE,
+	KW_CONST,
 	KW_CONTINUE,
 	KW_DEFAULT,
 	KW_DO,
@@ -43,6 +51,7 @@ enum KW
 	KW_IMPORT,
 	KW_NAMESPACE,
 	KW_RETURN,
+	KW_STATIC,
 	KW_STRUCT,
 	KW_TYPEDEF,
 	KW_VOID,
@@ -108,3 +117,4 @@ typedef struct token
 token_t *tokenise(FILE *fp);
 void print_token(token_t *token);
 int op_precedence(enum OP op);
+enum ASSOC op_associative(enum OP op);

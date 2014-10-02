@@ -97,6 +97,18 @@ static bool parse_import(token_t **tokens_, import_t **import, symbol_table_t *t
 static bool parse_type(token_t **tokens_, type_t **type, symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
+	bool isstatic = false;
+	bool isconst  = false;
+	if(IS_KEYWORD(tokens[0], STATIC))
+	{
+		isstatic = true;
+		tokens++;
+	}
+	if(IS_KEYWORD(tokens[0], CONST))
+	{
+		isconst = true;
+		tokens++;
+	}
 	if(IS_ID(tokens[0]))
 	{
 		*type = CALLOC_T(1, type_t);
@@ -105,8 +117,10 @@ static bool parse_type(token_t **tokens_, type_t **type, symbol_table_t *table)
 		else if(strcmp(tokens[0].string, "float") == 0)
 			(*type)->is_float = true;
 
-		(*type)->type = AST_TYPE_TYPE;
-		(*type)->name = make_id(tokens[0].string);
+		(*type)->type        = AST_TYPE_TYPE;
+		(*type)->name        = make_id(tokens[0].string);
+		(*type)->is_static   = isstatic;
+		(*type)->is_constant = isconst;
 
 		*tokens_ = tokens + 1;
 		return true;
@@ -126,6 +140,7 @@ static bool parse_decl(token_t **tokens_, decl_t **decl, symbol_table_t *table, 
 			(*decl)->type = AST_TYPE_DECL;
 			(*decl)->t    = type;
 			(*decl)->name = make_id(tokens->string);
+			(*decl)->expr = NULL;
 			tokens++;
 
 			if(tokens[0].type == TOK_ASSIGN)
@@ -313,12 +328,9 @@ static bool parse_paren_expression(token_t **tokens_, ast_t **ret , symbol_table
 		tokens++;
 		if(parse_expression(&tokens, ret, table))
 		{
-			if(IS_RPAREN(tokens[0]))
-			{
-				*tokens_ = tokens + 1;
-				return true;
-			}
-			//TODO:Cleanup.
+			if(!IS_RPAREN(tokens[0]))ERROR();
+			*tokens_ = tokens + 1;
+			return true;
 		}
 	}
 	return false;
@@ -418,6 +430,76 @@ again:
 	}
 }
 
+/*  Assumes that there is at least one operator to be read
+ */
+static bool shunting_yard(token_t **tokens_, ast_t *first, ast_t **out, symbol_table_t *table)
+{
+	static const int STACK_SIZE = 100;
+	token_t *tokens = *tokens_;
+	ast_t *operand_stack[STACK_SIZE];
+	ast_t *term;
+	binop_t *new;
+	enum OP operator_stack[STACK_SIZE];
+	enum OP op1, op2;
+	int operand_size  = 1;
+	int operator_size = 0;
+	operand_stack[0] = first;
+
+	while(true)
+	{
+		if(tokens[0].type == TOK_OP)
+		{
+			op1 = tokens[0].op;
+			while(operator_size)
+			{
+				op2 = operator_stack[operator_size - 1];
+				if((op_associative(op1) ==  ASSOC_LEFT          &&
+					op_precedence(op1) >= op_precedence(op2)) ||
+				   (op_precedence(op1) >  op_precedence(op2)))
+				{
+					if(operand_size < 2) ERROR();
+					new         = MALLOC_T(binop_t);
+					new->type   = AST_TYPE_BINOP;
+					new->right  = operand_stack[--operand_size];
+					new->left   = operand_stack[--operand_size];
+					new->op     = op2;
+					operand_stack[operand_size++] = (ast_t*)new;
+					operator_size--;
+				}
+				else break;
+			}
+			operator_stack[operator_size++] = op1;
+			tokens++;
+		}
+		else if(parse_term(&tokens, &term, table))
+		{
+			operand_stack[operand_size++] = term;
+		}
+		else
+		{
+			while(true)
+			{
+				if(operand_size == 1 && operator_size == 0)
+				{
+					*out = operand_stack[0];
+					*tokens_ = tokens;
+					return true;
+				}
+				else if(operand_size > 1 && operator_size > 0)
+				{
+					new         = MALLOC_T(binop_t);
+					new->type   = AST_TYPE_BINOP;
+					new->right  = operand_stack[--operand_size];
+					new->left   = operand_stack[--operand_size];
+					new->op     = operator_stack[--operator_size];
+					operand_stack[operand_size++] = (ast_t*)new;
+				}
+				else ERROR();
+			}
+		}
+	}
+}
+
 static bool parse_binop(token_t **tokens_, binop_t **ret, symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
@@ -427,6 +509,7 @@ static bool parse_binop(token_t **tokens_, binop_t **ret, symbol_table_t *table)
 again:
 		if(tokens->type == TOK_OP)
 		{
+		/*
 			if(!parse_sub_binop(&tokens, left, (binop_t**)&right, table)) ERROR();
 			if(tokens->type == TOK_OP)
 			{
@@ -435,6 +518,10 @@ again:
 			}
 			*tokens_ = tokens;
 			*ret = (binop_t*)right;
+			return true;
+		*/
+			if(!shunting_yard(&tokens, left, (ast_t**)ret, table)) ERROR();
+			*tokens_ = tokens;
 			return true;
 		}
 	}

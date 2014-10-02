@@ -15,6 +15,7 @@ static const char *kw_strings[] =
 {
 	"break",
 	"case",
+	"const",
 	"continue",
 	"default",
 	"do",
@@ -26,6 +27,7 @@ static const char *kw_strings[] =
 	"import",
 	"namespace",
 	"return",
+	"static",
 	"struct",
 	"typedef",
 	"void",
@@ -420,6 +422,42 @@ token_t *tokenise(FILE *fp)
 		}
 	}
 	return out;
+}
+
+enum ASSOC op_associative(enum OP op)
+{
+	switch(op)
+	{
+	case OP_NOT:
+	case OP_BIT_NOT:
+		return ASSOC_RIGHT;
+
+	case OP_MUL:
+	case OP_DIV:
+	case OP_MOD:
+	case OP_ADD:
+	case OP_SUB:
+	case OP_LSHIFT:
+	case OP_RSHIFT:
+	case OP_GT:
+	case OP_GTE:
+	case OP_LT:
+	case OP_LTE:
+	case OP_EQ:
+	case OP_NEQ:
+	case OP_BIT_AND:
+	case OP_BIT_XOR:
+	case OP_BIT_OR:
+	case OP_AND:
+	case OP_XOR:
+	case OP_OR:
+		return ASSOC_LEFT;
+	case OP_QU:
+		return ASSOC_RIGHT;
+	default:
+		fprintf(stderr, "Invalid op type.\n");
+		exit(-1);
+	}
 }
 
 int op_precedence(enum OP op)

@@ -10,7 +10,7 @@ int cmp(const char *a, const char *b)
 
 int main(int argc, char *argv[])
 {
-	const char *input = "./tests/binop1.c";
+	const char *input = "../tests/all.c";
 	const char *output = "a.out";
 	for(int i = 1; i < argc; i++)
 	{

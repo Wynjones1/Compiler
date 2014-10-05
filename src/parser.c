@@ -23,7 +23,13 @@
 						      (token).type == TOK_FLOAT ||\
 						      (token).type == TOK_STRING)
 
-#define ERROR() do{print_token(tokens); fflush(stdout); fprintf(stderr, "Error %s %d\n", __FILE__, __LINE__); exit(-1);}while(0);
+#define ERROR()\
+do{\
+	print_token(tokens);\
+	fflush(stdout);\
+	fprintf(stderr, "Error %s %d\n", __FILE__, __LINE__);\
+	exit(-1);}\
+while(0);
 
 
 static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *table);
@@ -88,6 +94,8 @@ static bool parse_import(token_t **tokens_, import_t **import, symbol_table_t *t
 		}
 		else
 		{
+			tokens++;
+			print_token(tokens);
 			ERROR();
 		}
 	}
@@ -240,8 +248,8 @@ static bool parse_return(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 		return_t *temp = MALLOC_T(return_t);
 		temp->type = AST_TYPE_RETURN;
 		temp->expr = NULL;
-		if( parse_expression(&tokens, &expr, table) ||
-			parse_expression_list(&tokens, &expr, table))
+		if( parse_expression_list(&tokens, &expr, table) ||
+			parse_expression(&tokens, &expr, table))
 		{
 			temp->expr = expr;
 		}
@@ -276,6 +284,7 @@ static bool parse_param_list(token_t **tokens_, param_list_t *ret , symbol_table
 static bool parse_function_call(token_t **tokens_, ast_t *call, function_call_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
+	print_token(tokens);
 	if(IS_LPAREN(tokens[0])) //Function Call
 	{
 		param_list_t list;
@@ -384,53 +393,9 @@ static int comp_precedence(enum OP op0, enum OP op1)
 	return 1;
 }
 
-static bool parse_sub_binop(token_t **tokens_, ast_t *left, binop_t **ret, symbol_table_t *table)
-{
-	token_t *tokens = *tokens_;
-	ast_t *right;
-	enum OP op;
-again:
-	op = tokens->op;
-	tokens++;
-	if(!parse_term(&tokens, &right, table)) ERROR();
-	if(tokens->type != TOK_OP)
-	{
-		binop_t *out = make_binop(op, left, right);
-		*tokens_     = tokens;
-		*ret         = out;
-		return true;
-	}
-	if(op_precedence(tokens->op) == op_precedence(op))
-	{
-		binop_t *temp = make_binop(op, left, right);
-		left          = (ast_t*)temp;
-		goto again;
-	}
-	else if(op_precedence(tokens->op) > op_precedence(op))
-	{
-		binop_t *temp = make_binop(op, left, right);
-		*ret          = temp;
-		*tokens_      = tokens;
-		return true;
-	}
-	else
-	{
-		binop_t *temp;
-		left = (ast_t*) make_binop(op, left, NULL);
-		if(!parse_sub_binop(&tokens, right, &temp, table)) ERROR();
-		while(tokens[0].type == TOK_OP &&
-			op_precedence(tokens->op) < op_precedence(((binop_t*)left)->op))
-		{
-			if(!parse_sub_binop(&tokens, (ast_t*)temp, &temp, table)) ERROR();
-		}
-		((binop_t*)left)->right = (ast_t*)temp;
-		*ret = (binop_t*)left;
-		*tokens_ = tokens;
-		return true;
-	}
-}
-
-/*  Assumes that there is at least one operator to be read
+/*
+ * Parses binary operations with terms inbetween, parenthesised expressions are
+ * dealt with in parse_term so we only have to care about terms and operations.
  */
 static bool shunting_yard(token_t **tokens_, ast_t *first, ast_t **out, symbol_table_t *table)
 {
@@ -506,20 +471,8 @@ static bool parse_binop(token_t **tokens_, binop_t **ret, symbol_table_t *table)
 	ast_t *left, *right;
 	if(parse_term(&tokens, &left, table))
 	{
-again:
 		if(tokens->type == TOK_OP)
 		{
-		/*
-			if(!parse_sub_binop(&tokens, left, (binop_t**)&right, table)) ERROR();
-			if(tokens->type == TOK_OP)
-			{
-				left = right;
-				goto again;
-			}
-			*tokens_ = tokens;
-			*ret = (binop_t*)right;
-			return true;
-		*/
 			if(!shunting_yard(&tokens, left, (ast_t**)ret, table)) ERROR();
 			*tokens_ = tokens;
 			return true;
@@ -831,18 +784,33 @@ static bool parse_function_proto(token_t **tokens_, function_t **function, symbo
 		{
 			if(!IS_RPAREN(tokens[0])) ERROR();
 			tokens++;
-			if(IS_ARROW(tokens[0]) && IS_LPAREN(tokens[1]))
+			if(IS_ARROW(tokens[0]))
 			{
-				tokens += 2;
-				if(!parse_decl_list(&tokens, &outputs, table, false))
+				tokens++;
+				if(IS_LPAREN(tokens[0]))
 				{
-					ERROR();
+					tokens++;
+					if(!parse_decl_list(&tokens, &outputs, table, false))
+					{
+						ERROR();
+					}
+					if(!IS_RPAREN(tokens[0]))
+					{
+						ERROR();
+					}
+					tokens += 1;
 				}
-				if(!IS_RPAREN(tokens[0]))
+				else if(IS_ID(tokens[0]))
 				{
-					ERROR();
+					if(!parse_decl_list(&tokens, &outputs, table, false)) ERROR();
 				}
-				tokens += 1;
+				else ERROR();
+			}
+			else
+			{
+				outputs = MALLOC_T(decl_list_t);
+				outputs->type = AST_TYPE_DECL_LIST;
+				outputs->size = 0;
 			}
 			function_t *temp = MALLOC_T(function_t);
 			temp->type       = AST_TYPE_FUNCTION;
@@ -887,6 +855,11 @@ program_t *parse(token_t *tokens)
 	int num_imports   = 0;
 	int num_functions = 0;
 
+	while(IS_NEWLINE(*tokens))
+	{
+		tokens++;
+	}
+
 	while(parse_import(&tokens, &import, table))
 	{
 		while(IS_NEWLINE(tokens[0])) tokens++;
@@ -901,9 +874,11 @@ program_t *parse(token_t *tokens)
 
 	while(parse_function(&tokens, &function, table))
 	{
+		while(IS_NEWLINE(tokens[0])) tokens++;
 		functions = REALLOC_T(functions, function_t*, ++num_functions);
 		functions[num_functions- 1] = function;
 	}
+	if(tokens[0].type != TOK_NONE) ERROR();
 	program->num_imports   = num_imports;
 	program->imports       = imports;
 	program->num_functions = num_functions;

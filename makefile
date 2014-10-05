@@ -9,6 +9,9 @@ build:
 	mkdir -p build
 	cd build; cmake ..
 
+cov: all
+	cd build; make coverage
+
 tree:
 	./scripts/display_parse_tree.py
 

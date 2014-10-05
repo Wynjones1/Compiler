@@ -1,31 +1,49 @@
 import io;
-from io import print;
+from io import printf;
 
-function main()
+function h()
 {
-	if(0)
-		i = 0;
-	else if(0)
-		i = 0;
-	else
-		i = 0;
-
-	while(0)
+	if(a == 1)
 	{
-		i = 1;
-	}
-
-	do
-	{
-		t = 0;
-	}
-	while(t);
-
-	f()();
-
-	f()()()()()()()()(f()()()());
-
-	for(i;i;i)
-	{
+	
 	}
 }
+
+function fac(int a)
+{
+	static int a;
+	const int b;
+	float b = 1.0;
+}
+
+function b(int a, int b)
+{
+	return a;
+}
+
+function c()
+{
+	return (1, 2, 3);
+}
+
+function d()
+{
+	a(1, 2, 3);
+}
+
+function e()
+{
+	b = (1);
+}
+
+function f()
+{
+	"Hellom world.\n";
+}
+
+function g()
+{
+	1 + 2 * 3;
+	2 * 3 + 1;
+}
+

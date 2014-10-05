@@ -47,7 +47,7 @@ static char *read_in(FILE *fp)
 
 static bool isseperator(char in)
 {
-	return isspace(in) || in == ',' || in == '.' || in == ';' || in == '(' || in == ')' || in == ':';
+	return isspace(in) || in == ',' || in == '.' || in == ';' || in == '(' || in == ')' || in == ':' || in == '{' || in == '}';
 }
 
 static bool isop(char in)

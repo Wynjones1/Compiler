@@ -1,13 +1,8 @@
+
 import io;
 from io import printf;
 
-function h()
-{
-	if(a == 1)
-	{
-	
-	}
-}
+
 
 function fac(int a)
 {
@@ -47,3 +42,51 @@ function g()
 	2 * 3 + 1;
 }
 
+function h()
+{
+	if(a == 1)
+	{
+		a and b or c xor 5;
+	}
+}
+
+function i()
+{
+	if(b == 1)
+	{
+	
+	}
+	else
+	{
+		return 123;
+	}
+
+	while(1)
+	{
+		a;
+	}
+
+	do
+	{
+		a;
+	}
+	while(b);
+}
+
+function j()
+{
+	for(i = 0; i < 10; i++)
+	{
+		b;
+	}
+}
+
+function k() -> (int)
+{
+	return 1;
+}
+
+function l() -> int
+{
+	return 1;
+}

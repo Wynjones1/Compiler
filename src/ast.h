@@ -61,7 +61,7 @@ typedef struct ast_list expr_list_t;
 typedef struct identifier
 {
 	enum AST_TYPE type;
-	const char *name;
+	char *name;
 }identifier_t;
 
 typedef struct import
@@ -172,9 +172,9 @@ typedef struct literal
 	enum AST_TYPE type;
 	union
 	{
-		int         integer;
-		float       flt;
-		const char *string;
+		int      integer;
+		float    flt;
+		char    *string;
 	};
 }literal_t;
 
@@ -187,5 +187,7 @@ typedef struct program
 	function_t  **functions;
 }program_t;
 
-#define ast_print(ast, fp) ast_print_((ast_t*)ast, fp);
+#define ast_print(ast, fp) ast_print_((ast_t*)ast, fp)
 void ast_print_(ast_t *ast, FILE *fp);
+#define ast_delete(ast) ast_delete_((ast_t*)ast)
+void ast_delete_(ast_t *to_delete);

@@ -284,7 +284,6 @@ static bool parse_param_list(token_t **tokens_, param_list_t *ret , symbol_table
 static bool parse_function_call(token_t **tokens_, ast_t *call, function_call_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
-	print_token(tokens);
 	if(IS_LPAREN(tokens[0])) //Function Call
 	{
 		param_list_t list;
@@ -515,12 +514,10 @@ static bool parse_else(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 		tokens += 1;
 		ast_t *statement;
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(parse_statement(&tokens, ret, table))
-		{
-			*tokens_ = tokens;
-			return true;
-		}
-		ERROR();
+		if(!parse_statement(&tokens, ret, table)) ERROR();
+
+		*tokens_ = tokens;
+		return true;
 	}
 	*ret = NULL;
 	return false;
@@ -630,7 +627,9 @@ static bool parse_for(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 		ast_t *init, *cond, *post, *expr;
 		if(!IS_LPAREN(tokens[1])) ERROR();
 		tokens += 2;
-		if(!parse_expression(&tokens, &init, table)) ERROR();
+		if(!(parse_decl(&tokens, (decl_t**)&init, table, true) ||
+			 parse_assignment(&tokens, &init, table)           ||
+			 parse_expression(&tokens, &init, table) )) ERROR();
 		if(!IS_SEMICOLON(tokens[0])) ERROR();
 		tokens++;
 		if(!parse_expression(&tokens, &cond, table)) ERROR();
@@ -865,11 +864,6 @@ program_t *parse(token_t *tokens)
 		while(IS_NEWLINE(tokens[0])) tokens++;
 		imports = REALLOC_T(imports, import_t*, ++num_imports);
 		imports[num_imports - 1] = import;
-	}
-
-	while(IS_NEWLINE(*tokens))
-	{
-		tokens++;
 	}
 
 	while(parse_function(&tokens, &function, table))

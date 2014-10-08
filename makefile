@@ -19,4 +19,4 @@ view: tree
 	eog out.png
 
 clean:
-	rm -Rf build bin
+	rm -Rf build bin tests/*.list

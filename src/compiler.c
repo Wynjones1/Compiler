@@ -23,11 +23,12 @@ void compile(const char *input_file, const char *output_file)
 	program_t *program = parse(tokens);
 	tokens_delete(tokens);
 	printf("Finished Parsing.\n");
-#if 0
+#if 1
 	FILE *fp = fopen("parse.tree", "w");
 	fflush(stdout);
 	ast_print(program, fp);
-	ast_print(program, stdout);
+	//ast_print(program, stdout);
+	fclose(fp);
 #endif
 	ast_delete(program);
 	fclose(out_fp);

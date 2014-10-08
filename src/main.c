@@ -2,6 +2,11 @@
 #include <string.h>
 #include "compiler.h"
 
+#if RUN_TESTS
+	#include "../tests/success.list"
+	#include "../tests/fail.list"
+#endif
+
 int cmp(const char *a, const char *b)
 {
 	return strncmp(a, b, strlen(a)) == 0;
@@ -10,7 +15,16 @@ int cmp(const char *a, const char *b)
 
 int main(int argc, char *argv[])
 {
-	const char *input = "../tests/all.c";
+#if RUN_TESTS
+	printf("Running tests.\n");
+	for(int i = 0; i < sizeof(success_tests) / sizeof(*success_tests); i++)
+	{
+		printf("Running %s\n", success_tests[i]);
+		compile(success_tests[i], "a.out");
+	}
+	return 0;
+#else
+	const char *input = NULL;
 	const char *output = "a.out";
 	for(int i = 1; i < argc; i++)
 	{
@@ -30,7 +44,8 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		printf("Not input file.\n");
+		printf("No input file.\n");
 	}
 	return 0;
+#endif
 }

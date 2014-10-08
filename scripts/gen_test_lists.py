@@ -7,10 +7,12 @@ def main():
 		test_dir = argv[1]
 		for d in ["success", "fail"]:
 			out = open(os.path.join(test_dir, d + ".list"), "w")
+			out.write("#pragma once\n const char *" + d + "_tests[] = {\n")
 			for root, dirs, files in os.walk(os.path.join(test_dir, d)):
 				for i in files:
 					if i.endswith(".c"):
-						out.write(os.path.join(root, i) + "\n")
+						out.write("\"" + os.path.join(root, i) + "\",\n")
+			out.write("};")
 
 if __name__ == "__main__":
 	main()

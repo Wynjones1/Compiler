@@ -10,6 +10,12 @@ add_executable(compiler ${SRC})
 
 set(CMAKE_BUILD_TYPE Debug)
 
+option(RUN_TESTS "Run the test suite" OFF)
+
+if(RUN_TESTS)
+	add_definitions(-DRUN_TESTS)
+endif()
+
 if(MSVC)
 else()
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99 -O0 -Wall -Werror")

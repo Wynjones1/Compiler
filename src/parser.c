@@ -69,6 +69,7 @@ static bool parse_import(token_t **tokens_, import_t **import, symbol_table_t *t
 			(*import)->type          = AST_TYPE_IMPORT;
 			(*import)->name          = make_id(tokens[1].string);
 			(*import)->add_to_global = false;
+			(*import)->to_import     = NULL;
 			*tokens_ = tokens + 3;
 			return true;
 		}
@@ -99,6 +100,7 @@ static bool parse_import(token_t **tokens_, import_t **import, symbol_table_t *t
 			ERROR();
 		}
 	}
+	*import = NULL;
 	return false;
 }
 
@@ -133,6 +135,7 @@ static bool parse_type(token_t **tokens_, type_t **type, symbol_table_t *table)
 		*tokens_ = tokens + 1;
 		return true;
 	}
+	*type = NULL;
 	return false;
 }
 
@@ -154,7 +157,12 @@ static bool parse_decl(token_t **tokens_, decl_t **decl, symbol_table_t *table, 
 			if(tokens[0].type == TOK_ASSIGN)
 			{
 				tokens++;
-				if(!parse_expression(&tokens, &(*decl)->expr, table)) return false;
+				if(!parse_expression(&tokens, &(*decl)->expr, table))
+				{
+					ast_delete(*decl);
+					*decl = NULL;
+					return false;
+				}
 			}
 			*tokens_ = tokens;
 			return true;
@@ -163,12 +171,15 @@ static bool parse_decl(token_t **tokens_, decl_t **decl, symbol_table_t *table, 
 		{
 			*decl = MALLOC_T(decl_t);
 			(*decl)->type = AST_TYPE_DECL;
-			(*decl)->t = type;
+			(*decl)->t    = type;
 			(*decl)->name = NULL;
+			(*decl)->expr = NULL;
 			*tokens_ = tokens;
 			return true;
 		}
+		ast_delete(type);
 	}
+	*decl = NULL;
 	return false;
 }
 
@@ -199,8 +210,8 @@ static bool parse_decl_list(token_t **tokens_, decl_list_t **list, symbol_table_
 				ERROR();//TODO: Emit proper error.
 			}
 		}
-		*tokens_ = tokens;
 	}
+	*tokens_ = tokens;
 	return true;
 }
 
@@ -235,6 +246,7 @@ static bool parse_expression_list(token_t **tokens_, ast_t **ret , symbol_table_
 			ERROR();
 		}
 	}
+	*ret = NULL;
 	return false;
 }
 
@@ -299,8 +311,10 @@ static bool parse_function_call(token_t **tokens_, ast_t *call, function_call_t 
 				*tokens_ = tokens + 1;
 				return true;
 			}
+			delete_list_static(&list);
 		}
 	}
+	*ret = NULL;
 	return false;
 }
 
@@ -325,6 +339,7 @@ static bool parse_term(token_t **tokens_, ast_t **ret, symbol_table_t *table)
 		*tokens_ = tokens;
 		return true;
 	}
+	*ret = NULL;
 	return false;
 }
 
@@ -341,6 +356,7 @@ static bool parse_paren_expression(token_t **tokens_, ast_t **ret , symbol_table
 			return true;
 		}
 	}
+	*ret = NULL;
 	return false;
 }
 
@@ -359,7 +375,15 @@ static bool parse_literal(token_t **tokens_, literal_t **ret , symbol_table_t *t
 	token_t *tokens = *tokens_;
 	X(INTEGER, integer);
 	X(FLOAT, flt);
-	X(STRING, string);
+	if(IS_STRING(tokens[0]))
+	{
+		(*ret)= MALLOC_T(literal_t);
+		(*ret)->type = AST_TYPE_STRING;
+		(*ret)->string = copy_string(tokens[0].string);
+		*tokens_ = tokens + 1;
+		return true;
+	}
+	*ret = NULL;
 	return false;
 }
 
@@ -372,6 +396,7 @@ static bool parse_id(token_t **tokens_, identifier_t **id, symbol_table_t *table
 		*tokens_    = tokens + 1;
 		return true;
 	}
+	*id = NULL;
 	return false;
 }
 
@@ -385,12 +410,14 @@ binop_t *make_binop(enum OP op, ast_t *left, ast_t *right)
 	return out;
 }
 
+#if 0
 static int comp_precedence(enum OP op0, enum OP op1)
 {
 	if(op_precedence(op0) == op_precedence(op1)) return 0;
 	if(op_precedence(op0) <  op_precedence(op1))  return -1;
 	return 1;
 }
+#endif
 
 /*
  * Parses binary operations with terms inbetween, parenthesised expressions are
@@ -464,19 +491,24 @@ static bool shunting_yard(token_t **tokens_, ast_t *first, ast_t **out, symbol_t
 	}
 }
 
-static bool parse_binop(token_t **tokens_, binop_t **ret, symbol_table_t *table)
+static bool parse_binop(token_t **tokens_, ast_t **ret, symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
-	ast_t *left, *right;
+	ast_t *left;
 	if(parse_term(&tokens, &left, table))
 	{
 		if(tokens->type == TOK_OP)
 		{
-			if(!shunting_yard(&tokens, left, (ast_t**)ret, table)) ERROR();
-			*tokens_ = tokens;
-			return true;
+			if(!shunting_yard(&tokens, left, ret, table)) ERROR();
 		}
+		else
+		{
+			*ret = left;
+		}
+		*tokens_ = tokens;
+		return true;
 	}
+	*ret = NULL;
 	return false;
 }
 
@@ -484,19 +516,17 @@ static bool parse_expression(token_t **tokens_, ast_t **ret , symbol_table_t *ta
 {
 	token_t *tokens = *tokens_;
 	ast_t  *expr;
-	decl_t *decl;
-	binop_t *left, *right;
 	if( parse_assignment(&tokens, &expr, table))
 	{
 		ERROR();
 	}
-	if( parse_binop(&tokens, (binop_t**)&expr, table) ||
-		parse_term(&tokens, &expr, table))
+	if( parse_binop(&tokens, &expr, table))
 	{
 		*ret     = expr;
 		*tokens_ = tokens;
 		return true;
 	}
+	*ret = NULL;
 	return false;
 }
 
@@ -512,7 +542,6 @@ static bool parse_else(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 	if(IS_KEYWORD(tokens[0], ELSE))
 	{
 		tokens += 1;
-		ast_t *statement;
 		if(IS_NEWLINE(tokens[0])) tokens++;
 		if(!parse_statement(&tokens, ret, table)) ERROR();
 
@@ -648,6 +677,7 @@ static bool parse_for(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 		*ret      = (ast_t*)out;
 		return true;
 	}
+	*ret = NULL;
 	return false;
 }
 
@@ -684,31 +714,16 @@ static bool parse_assignment(token_t **tokens_, ast_t **ret , symbol_table_t *ta
 		*tokens_     = tokens;
 		return true;
 	}
+	*ret = NULL;
 	return false;
 }
 
 static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
-	if(parse_return(&tokens, ret, table))
-	{
-		if(tokens[0].type != TOK_SEMICOLON)
-		{
-			ERROR();
-		}
-		*tokens_ = tokens + 1;
-		return true;
-	}
-	if( parse_decl(&tokens, (decl_t**)ret, table, true))
-	{
-		if(tokens[0].type != TOK_SEMICOLON)
-		{
-			ERROR();
-		}
-		*tokens_ = tokens + 1;
-		return true;
-	}
-	if( parse_assignment(&tokens, ret, table) ||
+	if( parse_return(&tokens, ret, table)               ||
+		parse_decl(&tokens, (decl_t**)ret, table, true) ||
+		parse_assignment(&tokens, ret, table)           ||
 		parse_expression(&tokens, ret, table))
 	{
 		if(tokens[0].type != TOK_SEMICOLON)
@@ -718,12 +733,14 @@ static bool parse_statement(token_t **tokens_, ast_t **ret , symbol_table_t *tab
 		*tokens_ = tokens + 1;
 		return true;
 	}
+
 	if( parse_conditional(&tokens, ret, table)    ||
 		parse_statement_list(&tokens, ret, table))
 	{
 		*tokens_ = tokens;
 		return true;
 	}
+	*ret = NULL;
 	return false;
 }
 
@@ -776,7 +793,7 @@ static bool parse_function_proto(token_t **tokens_, function_t **function, symbo
 		IS_ID(tokens[1]) &&
 		IS_LPAREN(tokens[2]))
 	{
-		char *name = copy_string(tokens[1].string);
+		char *name = tokens[1].string;
 		tokens += 3;
 		decl_list_t *inputs = NULL, *outputs = NULL;
 		if(parse_decl_list(&tokens, &inputs, table, true))
@@ -807,9 +824,10 @@ static bool parse_function_proto(token_t **tokens_, function_t **function, symbo
 			}
 			else
 			{
-				outputs = MALLOC_T(decl_list_t);
-				outputs->type = AST_TYPE_DECL_LIST;
-				outputs->size = 0;
+				outputs        = MALLOC_T(decl_list_t);
+				outputs->type  = AST_TYPE_DECL_LIST;
+				outputs->size  = 0;
+				outputs->exprs = NULL;
 			}
 			function_t *temp = MALLOC_T(function_t);
 			temp->type       = AST_TYPE_FUNCTION;
@@ -822,13 +840,13 @@ static bool parse_function_proto(token_t **tokens_, function_t **function, symbo
 			return true;
 		}
 	}
+	*function = NULL;
 	return false;
 }
 
 static bool parse_function(token_t **tokens_, function_t **function, symbol_table_t *table)
 {
 	token_t *tokens = *tokens_;
-	ast_t *statements;
 	if(parse_function_proto(&tokens, function, table))
 	{
 		if(IS_NEWLINE(tokens[0])) tokens++;
@@ -870,7 +888,7 @@ program_t *parse(token_t *tokens)
 	{
 		while(IS_NEWLINE(tokens[0])) tokens++;
 		functions = REALLOC_T(functions, function_t*, ++num_functions);
-		functions[num_functions- 1] = function;
+		functions[num_functions - 1] = function;
 	}
 	if(tokens[0].type != TOK_NONE) ERROR();
 	program->num_imports   = num_imports;

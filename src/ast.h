@@ -191,3 +191,6 @@ typedef struct program
 void ast_print_(ast_t *ast, FILE *fp);
 #define ast_delete(ast) ast_delete_((ast_t*)ast)
 void ast_delete_(ast_t *to_delete);
+
+//TODO:Remove this and just make it an allocated list wherever it is used.
+void delete_list_static(ast_list_t *l);

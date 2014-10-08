@@ -35,10 +35,8 @@ static void print_FUNCTION(ast_t *ast, FILE *fp)
 	function_t *function = (function_t*)ast;
 	PRINT("FUNCTION");
 	ast_print(function->name, fp);
-	if(function->input)
-		ast_print(function->input, fp);
-	if(function->output)
-		ast_print(function->output, fp);
+	ast_print(function->input, fp);
+	ast_print(function->output, fp);
 	ast_print(function->statements, fp);
 }
 
@@ -146,10 +144,7 @@ static void print_RETURN(ast_t *ast, FILE *fp)
 {
 	return_t *ret = (return_t*)ast;
 	PRINT("RETURN");
-	if(ret->expr)
-	{
-		ast_print(ret->expr, fp);
-	}
+	ast_print(ret->expr, fp);
 }
 
 static void print_IF(ast_t *ast, FILE *fp)
@@ -158,10 +153,7 @@ static void print_IF(ast_t *ast, FILE *fp)
 	PRINT("IF");
 	ast_print(temp->cond, fp);
 	ast_print(temp->succ, fp);
-	if(temp->fail)
-	{
-		ast_print(temp->fail, fp);
-	}
+	ast_print(temp->fail, fp);
 }
 
 static void print_PROGRAM(ast_t *ast, FILE *fp)
@@ -227,7 +219,7 @@ static void delete_TYPE(ast_t *ast)
 {
 	type_t *t = (type_t *)ast;
 	//TODO: Decide if have next
-	free(t->name);
+	ast_delete(t->name);
 	free(ast);
 }
 
@@ -297,17 +289,22 @@ static void delete_DO(ast_t *ast)
 	free(d);
 }
 
+void delete_list_static(ast_list_t *l)
+{
+	for(int i = 0; i < l->size; i++)
+	{
+		ast_delete(l->exprs[i]);
+	}
+	free(l->exprs);
+}
+
 static void delete_FUNC_CALL(ast_t *ast)
 {
 	function_call_t *f = (function_call_t*)ast;
 	ast_delete(f->call);
 
 	ast_list_t *l = &f->params;
-	for(int i = 0; i < l->size; i++)
-	{
-		ast_delete(l->exprs[i]);
-	}
-	free(l->exprs);
+	delete_list_static(l);
 
 	free(f);
 }
@@ -361,6 +358,7 @@ static void delete_FUNCTION(ast_t *ast)
 	ast_delete(func->input);
 	ast_delete(func->output);
 	ast_delete(func->statements);
+	free(func);
 	//TODO:Delete the symbol table too.
 }
 
@@ -410,6 +408,7 @@ static void delete_WHILE(ast_t *ast)
 		break
 void ast_print_(ast_t *ast, FILE *fp)
 {
+	if(ast == NULL) return;
 	depth++;
 	if(fp == stdout)
 		print_depth(fp);
@@ -456,6 +455,7 @@ void ast_print_(ast_t *ast, FILE *fp)
 		break
 void ast_delete_(ast_t *ast)
 {
+	if(ast == NULL) return;
 	switch(ast->type)
 	{
 		X(ASSIGN);

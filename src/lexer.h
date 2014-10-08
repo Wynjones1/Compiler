@@ -115,6 +115,7 @@ typedef struct token
 }token_t;
 
 token_t *tokenise(FILE *fp);
+void tokens_delete(token_t *tokens);
 void print_token(token_t *token);
 int op_precedence(enum OP op);
 enum ASSOC op_associative(enum OP op);

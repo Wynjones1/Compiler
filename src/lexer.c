@@ -39,7 +39,7 @@ static char *read_in(FILE *fp)
 	fseek(fp, 0, SEEK_END);
 	size_t size = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	char *out = (char*)malloc(size + 1);
+	char *out = MALLOC_ARRAY_T(char, size + 1);
 	fread(out, 1, size, fp);
 	out[size] = '\0';
 	return out;
@@ -105,15 +105,17 @@ void print_token(token_t *token)
 }
 #undef X
 
-static void new_token(token_t **token)
+static void new_token(token_t **tokens_)
 {
+	token_t *tokens = *tokens_;
 #if VERBOSE_LEXER
-	print_token(&(*token)[g_token_count]);
+	print_token(tokens + g_token_count);
 #endif
 	g_token_count++;
-	*token = (token_t*) realloc(*token, sizeof(token_t) * (g_token_count + 1));
-	(*token)[g_token_count].type = TOK_NONE;
-	(*token)[g_token_count].line = g_line_count;
+	tokens = REALLOC_T(tokens, token_t, g_token_count + 1);
+	tokens[g_token_count].type = TOK_NONE;
+	tokens[g_token_count].line = g_line_count;
+	*tokens_ = tokens;
 }
 
 void unexpected_end_error(void) __attribute__ ((noreturn));
@@ -156,9 +158,9 @@ static token_t *read_int(char **pos_, token_t *in)
 	}
 	else if(c == '.' || c == 'e' || c == 'E'  || c == 'f')
 	{
-		read_float(pos_, in);
+		in = read_float(pos_, in);
 	}
-	else if(isseperator(c) || (c == 'x' && isdigit(pos[idx])) || c == '/' && pos[idx] == '*')
+	else if(isseperator(c) || (c == 'x' && isdigit(pos[idx])) || (c == '/' && pos[idx] == '*'))
 	{
 		in[g_token_count].integer = strtol(*pos_, pos_, 0);
 		in[g_token_count].type    = TOK_INTEGER;
@@ -253,12 +255,13 @@ static token_t *read_single(char **pos, token_t *in)
 		case '{': token = TOK_LBRACE;    break;
 		case '}': token = TOK_RBRACE;    break;
 		case ';': token = TOK_SEMICOLON; break;
-		case ':': token = TOK_COLON; break;
-		case ',': token = TOK_COMMA; break;
-		case '.': token = TOK_PERIOD; break;
+		case ':': token = TOK_COLON;     break;
+		case ',': token = TOK_COMMA;     break;
+		case '.': token = TOK_PERIOD;    break;
 		default:
 			invalid_token_error();
 	}
+
 	in[g_token_count].type = token;
 	(*pos)++;
 	new_token(&in);
@@ -288,7 +291,7 @@ static enum OP char_to_op(char c)
 		X('-',OP_SUB);
 		default:
 			fprintf(stderr, "Not a single char operation.\n");
-			exit;
+			exit(-1);
 	}
 }
 #undef X
@@ -343,7 +346,7 @@ static token_t *read_string(char **pos_, token_t *in)
 	if(!c) unexpected_end_error();
 
 	in[g_token_count].type          = TOK_STRING;
-	in[g_token_count].string        = (char*) malloc( count + 1);
+	in[g_token_count].string        = MALLOC_ARRAY_T(char, count + 1);
 	in[g_token_count].string[count] = '\0';
 	memcpy(in[g_token_count].string, *pos_, count);
 
@@ -359,13 +362,14 @@ token_t *tokenise(FILE *fp)
 	out->type     = TOK_NONE;
 	out->line     = 1;
 
+#if VERBOSE_LEXER
 	printf("%s\n----------------\n", file);
+#endif
 
 	g_line_count  = 1;
 	g_token_count = 0;
 
 	char *pos = file;
-	char cur;
 	while(*pos)
 	{
 		if(pos[0] == '/' &&  pos[1] == '*')
@@ -378,7 +382,7 @@ token_t *tokenise(FILE *fp)
 			if(!pos[0] || !pos[1]) unexpected_end_error();
 			pos += 2;
 		}
-		if(isdigit(*pos))
+		else if(isdigit(*pos))
 		{
 			out = read_int(&pos, out);
 		}
@@ -421,6 +425,7 @@ token_t *tokenise(FILE *fp)
 			exit(-1);
 		}
 	}
+	free(file);
 	return out;
 }
 
@@ -533,6 +538,27 @@ const char *get_binop_string(enum OP op)
 		X(XOR);
 		X(OR);
 		X(QU);
+		default:
+			fprintf(stderr, "Invalid op type.\n");
+			exit(-1);
 	}
 }
 #undef X
+
+void tokens_delete(token_t *tokens_)
+{
+	token_t *tokens = tokens_;
+	while(tokens->type != TOK_NONE)
+	{
+		switch(tokens->type)
+		{
+			case TOK_STRING:
+			case TOK_ID:
+				free(tokens->string);
+			default:
+				break;
+		}
+		tokens++;
+	}
+	free(tokens_);
+}

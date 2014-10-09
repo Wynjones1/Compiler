@@ -51,6 +51,13 @@ static void print_FUNC_CALL(ast_t *ast, FILE *fp)
 	}
 }
 
+static void print_NEG(ast_t *ast, FILE *fp)
+{
+	neg_t *n = (neg_t*)ast;
+	PRINT("NEG");
+	ast_print(n->expr, fp);
+}
+
 static void print_DECL(ast_t *ast, FILE *fp)
 {
 	decl_t *decl = (decl_t*)ast;
@@ -323,6 +330,13 @@ static void delete_LIST(ast_t *ast)
 	delete_AST_LIST(ast);
 }
 
+static void delete_NEG(ast_t *ast)
+{
+	neg_t *n = (neg_t*)ast;
+	ast_delete(n->expr);
+	free(n);
+}
+
 static void delete_NONE(ast_t *ast)
 {
 	free(ast);
@@ -431,6 +445,7 @@ void ast_print_(ast_t *ast, FILE *fp)
 		X(IMPORT);
 		X(INTEGER);
 		X(LIST);
+		X(NEG);
 		X(NONE);
 		X(PROGRAM);
 		X(RETURN);
@@ -472,6 +487,7 @@ void ast_delete_(ast_t *ast)
 		X(IMPORT);
 		X(INTEGER);
 		X(LIST);
+		X(NEG);
 		X(NONE);
 		X(PROGRAM);
 		X(RETURN);

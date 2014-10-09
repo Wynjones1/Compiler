@@ -23,6 +23,7 @@ enum AST_TYPE
 	AST_TYPE_IMPORT,
 	AST_TYPE_INTEGER,
 	AST_TYPE_LIST,
+	AST_TYPE_NEG,
 	AST_TYPE_NONE,
 	AST_TYPE_PROGRAM,
 	AST_TYPE_RETURN,
@@ -177,6 +178,12 @@ typedef struct literal
 		char    *string;
 	};
 }literal_t;
+
+typedef struct neg
+{
+	enum AST_TYPE type;
+	ast_t *expr;
+}neg_t;
 
 typedef struct program
 {

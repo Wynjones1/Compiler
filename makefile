@@ -2,7 +2,7 @@ all: build
 	cd build; make
 
 run: all
-	./bin/compiler -i ./tests/success/all.c
+	./bin/compiler -i ./tests/success/current.c
 	./scripts/display_parse_tree.py
 
 build:

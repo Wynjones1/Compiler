@@ -302,16 +302,15 @@ static bool parse_function_call(token_t **tokens_, ast_t *call, function_call_t 
 		tokens++;
 		if(parse_param_list(&tokens, &list, table))
 		{
-			if(IS_RPAREN(tokens[0]))
-			{
-				*ret = MALLOC_T(function_call_t);
-				(*ret)->type = AST_TYPE_FUNC_CALL;
-				(*ret)->call = call;
-				(*ret)->params = list;
-				*tokens_ = tokens + 1;
-				return true;
-			}
-			delete_list_static(&list);
+			if(!IS_RPAREN(tokens[0]))
+				ERROR();
+
+			*ret = MALLOC_T(function_call_t);
+			(*ret)->type = AST_TYPE_FUNC_CALL;
+			(*ret)->call = call;
+			(*ret)->params = list;
+			*tokens_ = tokens + 1;
+			return true;
 		}
 	}
 	*ret = NULL;
@@ -339,6 +338,20 @@ static bool parse_term(token_t **tokens_, ast_t **ret, symbol_table_t *table)
 		*tokens_ = tokens;
 		return true;
 	}
+	else if(IS_OP(tokens[0], SUB))
+	{
+		tokens++;
+		ast_t *temp;
+		if(parse_term(&tokens, &temp, table))
+		{
+			neg_t *n = MALLOC_T(neg_t);
+			n->type = AST_TYPE_NEG;
+			n->expr = temp;
+			*tokens_ = tokens;
+			*ret = (ast_t*)n;
+			return true;
+		}
+	}
 	*ret = NULL;
 	return false;
 }
@@ -351,7 +364,8 @@ static bool parse_paren_expression(token_t **tokens_, ast_t **ret , symbol_table
 		tokens++;
 		if(parse_expression(&tokens, ret, table))
 		{
-			if(!IS_RPAREN(tokens[0]))ERROR();
+			if(!IS_RPAREN(tokens[0]))
+				ERROR();
 			*tokens_ = tokens + 1;
 			return true;
 		}
@@ -400,7 +414,8 @@ static bool parse_id(token_t **tokens_, identifier_t **id, symbol_table_t *table
 	return false;
 }
 
-binop_t *make_binop(enum OP op, ast_t *left, ast_t *right)
+#if 0
+static binop_t *make_binop(enum OP op, ast_t *left, ast_t *right)
 {
 	binop_t *out = MALLOC_T(binop_t);
 	out->type    = AST_TYPE_BINOP;
@@ -410,7 +425,6 @@ binop_t *make_binop(enum OP op, ast_t *left, ast_t *right)
 	return out;
 }
 
-#if 0
 static int comp_precedence(enum OP op0, enum OP op1)
 {
 	if(op_precedence(op0) == op_precedence(op1)) return 0;
@@ -448,7 +462,8 @@ static bool shunting_yard(token_t **tokens_, ast_t *first, ast_t **out, symbol_t
 					op_precedence(op1) >= op_precedence(op2)) ||
 				   (op_precedence(op1) >  op_precedence(op2)))
 				{
-					if(operand_size < 2) ERROR();
+					if(operand_size < 2)
+						ERROR();
 					new         = MALLOC_T(binop_t);
 					new->type   = AST_TYPE_BINOP;
 					new->right  = operand_stack[--operand_size];
@@ -461,9 +476,8 @@ static bool shunting_yard(token_t **tokens_, ast_t *first, ast_t **out, symbol_t
 			}
 			operator_stack[operator_size++] = op1;
 			tokens++;
-		}
-		else if(parse_term(&tokens, &term, table))
-		{
+
+			if(!parse_term(&tokens, &term, table)) ERROR();
 			operand_stack[operand_size++] = term;
 		}
 		else
@@ -485,7 +499,8 @@ static bool shunting_yard(token_t **tokens_, ast_t *first, ast_t **out, symbol_t
 					new->op     = operator_stack[--operator_size];
 					operand_stack[operand_size++] = (ast_t*)new;
 				}
-				else ERROR();
+				else
+					ERROR();
 			}
 		}
 	}
@@ -499,7 +514,8 @@ static bool parse_binop(token_t **tokens_, ast_t **ret, symbol_table_t *table)
 	{
 		if(tokens->type == TOK_OP)
 		{
-			if(!shunting_yard(&tokens, left, ret, table)) ERROR();
+			if(!shunting_yard(&tokens, left, ret, table))
+				ERROR();
 		}
 		else
 		{
@@ -543,7 +559,8 @@ static bool parse_else(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 	{
 		tokens += 1;
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(!parse_statement(&tokens, ret, table)) ERROR();
+		if(!parse_statement(&tokens, ret, table))
+			ERROR();
 
 		*tokens_ = tokens;
 		return true;
@@ -566,11 +583,14 @@ static bool parse_if(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 		ast_t *cond;
 		ast_t *statement;
 		if_t *temp;
-		if(!parse_bool(&tokens, &cond, table)) ERROR();
-		if(!IS_RPAREN(tokens[0])) ERROR();
+		if(!parse_bool(&tokens, &cond, table))
+			ERROR();
+		if(!IS_RPAREN(tokens[0]))
+			ERROR();
 		tokens++;
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(!parse_statement(&tokens, &statement, table)) ERROR();
+		if(!parse_statement(&tokens, &statement, table))
+			ERROR();
 
 		temp            = MALLOC_T(if_t);
 		temp->type      = AST_TYPE_IF;
@@ -592,16 +612,20 @@ static bool parse_while(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 	token_t *tokens = *tokens_;
 	if(IS_KEYWORD(tokens[0], WHILE))
 	{
-		if(!IS_LPAREN(tokens[1])) ERROR();
+		if(!IS_LPAREN(tokens[1]))
+			ERROR();
 		tokens += 2;
 		ast_t *cond;
 		ast_t *statement;
 		while_t *temp;
-		if(!parse_bool(&tokens, &cond, table)) ERROR();
-		if(!IS_RPAREN(tokens[0])) ERROR();
+		if(!parse_bool(&tokens, &cond, table))
+			ERROR();
+		if(!IS_RPAREN(tokens[0]))
+			ERROR();
 		tokens++;
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(!parse_statement(&tokens, &statement, table)) ERROR();
+		if(!parse_statement(&tokens, &statement, table))
+			ERROR();
 
 		temp            = MALLOC_T(while_t);
 		temp->type      = AST_TYPE_WHILE;
@@ -624,14 +648,20 @@ static bool parse_do(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 	{
 		tokens++;
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(!parse_statement(&tokens, &statement, table)) ERROR();
+		if(!parse_statement(&tokens, &statement, table))
+			ERROR();
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(!IS_KEYWORD(tokens[0], WHILE)) ERROR();
-		if(!IS_LPAREN(tokens[1])) ERROR();
+		if(!IS_KEYWORD(tokens[0], WHILE))
+			ERROR();
+		if(!IS_LPAREN(tokens[1]))
+			ERROR();
 		tokens += 2;
-		if(!parse_bool(&tokens, &cond, table)) ERROR();
-		if(!IS_RPAREN(tokens[0])) ERROR();
-		if(!IS_SEMICOLON(tokens[1])) ERROR();
+		if(!parse_bool(&tokens, &cond, table)) 
+			ERROR();
+		if(!IS_RPAREN(tokens[0])) 
+			ERROR();
+		if(!IS_SEMICOLON(tokens[1])) 
+			ERROR();
 		tokens += 2;
 
 		temp            = MALLOC_T(do_t);
@@ -654,21 +684,29 @@ static bool parse_for(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 		for_t *out = MALLOC_T(for_t);
 		out->type = AST_TYPE_FOR;
 		ast_t *init, *cond, *post, *expr;
-		if(!IS_LPAREN(tokens[1])) ERROR();
+		if(!IS_LPAREN(tokens[1])) 
+			ERROR();
 		tokens += 2;
 		if(!(parse_decl(&tokens, (decl_t**)&init, table, true) ||
 			 parse_assignment(&tokens, &init, table)           ||
-			 parse_expression(&tokens, &init, table) )) ERROR();
-		if(!IS_SEMICOLON(tokens[0])) ERROR();
+			 parse_expression(&tokens, &init, table) )) 
+			 	ERROR();
+		if(!IS_SEMICOLON(tokens[0])) 
+			ERROR();
 		tokens++;
-		if(!parse_expression(&tokens, &cond, table)) ERROR();
-		if(!IS_SEMICOLON(tokens[0])) ERROR();
+		if(!parse_expression(&tokens, &cond, table)) 
+			ERROR();
+		if(!IS_SEMICOLON(tokens[0])) 
+			ERROR();
 		tokens++;
-		if(!parse_expression(&tokens, &post, table)) ERROR();
-		if(!IS_RPAREN(tokens[0])) ERROR();
+		if(!parse_expression(&tokens, &post, table)) 
+			ERROR();
+		if(!IS_RPAREN(tokens[0])) 
+			ERROR();
 		tokens++;
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(!parse_statement(&tokens, &expr, table)) ERROR();
+		if(!parse_statement(&tokens, &expr, table)) 
+			ERROR();
 		out->init = init;
 		out->cond = cond;
 		out->post = post;
@@ -705,7 +743,8 @@ static bool parse_assignment(token_t **tokens_, ast_t **ret , symbol_table_t *ta
 		assign_t *assign;
 		const char *name = tokens->string;
 		tokens += 2;
-		if(!parse_expression(&tokens, &expr, table)) ERROR();
+		if(!parse_expression(&tokens, &expr, table))
+			ERROR();
 		assign       = MALLOC_T(assign_t);
 		assign->type = AST_TYPE_ASSIGN;
 		assign->id   = make_id(name);
@@ -798,7 +837,8 @@ static bool parse_function_proto(token_t **tokens_, function_t **function, symbo
 		decl_list_t *inputs = NULL, *outputs = NULL;
 		if(parse_decl_list(&tokens, &inputs, table, true))
 		{
-			if(!IS_RPAREN(tokens[0])) ERROR();
+			if(!IS_RPAREN(tokens[0]))
+				ERROR();
 			tokens++;
 			if(IS_ARROW(tokens[0]))
 			{
@@ -818,9 +858,11 @@ static bool parse_function_proto(token_t **tokens_, function_t **function, symbo
 				}
 				else if(IS_ID(tokens[0]))
 				{
-					if(!parse_decl_list(&tokens, &outputs, table, false)) ERROR();
+					if(!parse_decl_list(&tokens, &outputs, table, false))
+						ERROR();
 				}
-				else ERROR();
+				else
+					ERROR();
 			}
 			else
 			{
@@ -850,7 +892,8 @@ static bool parse_function(token_t **tokens_, function_t **function, symbol_tabl
 	if(parse_function_proto(&tokens, function, table))
 	{
 		if(IS_NEWLINE(tokens[0])) tokens++;
-		if(!parse_statement_list(&tokens, &(*function)->statements, table)) ERROR();
+		if(!parse_statement_list(&tokens, &(*function)->statements, table))
+			ERROR();
 		*tokens_  = tokens;
 		return true;
 	}
@@ -890,7 +933,8 @@ program_t *parse(token_t *tokens)
 		functions = REALLOC_T(functions, function_t*, ++num_functions);
 		functions[num_functions - 1] = function;
 	}
-	if(tokens[0].type != TOK_NONE) ERROR();
+	if(tokens[0].type != TOK_NONE)
+		ERROR();
 	program->num_imports   = num_imports;
 	program->imports       = imports;
 	program->num_functions = num_functions;

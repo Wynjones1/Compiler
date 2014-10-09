@@ -158,11 +158,7 @@ static bool parse_decl(token_t **tokens_, decl_t **decl, symbol_table_t *table, 
 			{
 				tokens++;
 				if(!parse_expression(&tokens, &(*decl)->expr, table))
-				{
-					ast_delete(*decl);
-					*decl = NULL;
-					return false;
-				}
+					ERROR()
 			}
 			*tokens_ = tokens;
 			return true;
@@ -200,15 +196,10 @@ static bool parse_decl_list(token_t **tokens_, decl_list_t **list, symbol_table_
 		while(IS_COMMA(tokens[0]))
 		{
 			tokens++;
-			if(parse_decl(&tokens, &decl, table, need_varname))
-			{
-				(*list)->exprs = REALLOC_T((*list)->exprs, ast_t*, ++((*list)->size));
-				(*list)->exprs[(*list)->size - 1] = (ast_t*) decl;
-			}
-			else
-			{
-				ERROR();//TODO: Emit proper error.
-			}
+			if(!parse_decl(&tokens, &decl, table, need_varname))
+				ERROR();
+			(*list)->exprs = REALLOC_T((*list)->exprs, ast_t*, ++((*list)->size));
+			(*list)->exprs[(*list)->size - 1] = (ast_t*) decl;
 		}
 	}
 	*tokens_ = tokens;

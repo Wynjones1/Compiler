@@ -1,3 +1,0 @@
-#pragma once
- const char *fail_tests[] = {
-};

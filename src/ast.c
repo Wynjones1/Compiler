@@ -1,5 +1,6 @@
 #include "ast.h"
 #include <stdlib.h>
+#include "symbol.h"
 
 static int depth = -1;
 static int counter = 0;
@@ -386,7 +387,14 @@ static void delete_RETURN(ast_t *ast)
 
 static void delete_STATEMENT_LIST(ast_t *ast)
 {
-	delete_AST_LIST(ast);
+	statement_list_t *l = (statement_list_t*)ast;
+	for(int i = 0; i < l->size; i++)
+	{
+		ast_delete(l->exprs[i]);
+	}
+	symbol_table_delete(l->table);
+	free(l->exprs);
+	free(l);
 }
 
 static void delete_INTEGER(ast_t *ast)

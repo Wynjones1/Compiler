@@ -1,11 +1,11 @@
 #pragma once
 #include <stdbool.h>
 #include "lexer.h"
-#include "symbol.h"
 
 //Forward declarations.
 typedef struct ast  ast_t;
 typedef struct type type_t;
+typedef struct symbol_table symbol_table_t;
 
 enum AST_TYPE
 {
@@ -56,8 +56,15 @@ typedef struct ast_list
 
 typedef struct ast_list param_list_t;
 typedef struct ast_list decl_list_t;
-typedef struct ast_list statement_list_t;
 typedef struct ast_list expr_list_t;
+
+typedef struct statement_list
+{
+	enum AST_TYPE type;
+	int size;
+	ast_t **exprs;
+	symbol_table_t *table;
+}statement_list_t;
 
 typedef struct identifier
 {
@@ -148,6 +155,7 @@ typedef struct  for_s
 	ast_t *cond;
 	ast_t *post;
 	ast_t *expr;
+	symbol_table_t *table;
 }for_t;
 
 typedef struct do_s

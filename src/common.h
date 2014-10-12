@@ -1,5 +1,6 @@
 #pragma once
 #include <assert.h>
+#include <stdbool.h>
 
 #define MALLOC_T(type)            ((type*) malloc(sizeof(type)))
 #define MALLOC_ARRAY_T(type, num) ((type*) malloc(sizeof(type) * (num)));

@@ -119,7 +119,7 @@ static bool parse_type(token_t **tokens_, type_t **type, symbol_table_t *table)
 		isconst = true;
 		tokens++;
 	}
-	if(IS_ID(tokens[0]))
+	if(IS_ID(tokens[0]) && symbol_table_lookup_type(table, tokens[0].string))
 	{
 		*type = CALLOC_T(1, type_t);
 		if(strcmp(tokens[0].string, "int") == 0)
@@ -160,6 +160,7 @@ static bool parse_decl(token_t **tokens_, decl_t **decl, symbol_table_t *table, 
 				if(!parse_expression(&tokens, &(*decl)->expr, table))
 					ERROR()
 			}
+			symbol_table_add_var(table, *decl);
 			*tokens_ = tokens;
 			return true;
 		}
@@ -672,9 +673,14 @@ static bool parse_for(token_t **tokens_, ast_t **ret , symbol_table_t *table)
 	token_t *tokens = *tokens_;
 	if(IS_KEYWORD(tokens[0], FOR))
 	{
+		//So we can declare types in the for statement.
+		table      = symbol_table_add(table);
+
 		for_t *out = MALLOC_T(for_t);
-		out->type = AST_TYPE_FOR;
+		out->type  = AST_TYPE_FOR;
+		out->table = table;
 		ast_t *init, *cond, *post, *expr;
+
 		if(!IS_LPAREN(tokens[1])) 
 			ERROR();
 		tokens += 2;
@@ -782,6 +788,8 @@ static bool parse_statement_list(token_t **tokens_, ast_t **out, symbol_table_t 
 		*out= NULL;
 		return false;
 	}
+
+	table = symbol_table_new(table);
 	tokens++;
 	ast_t **statements = NULL;
 	ast_t *statement;
@@ -798,20 +806,13 @@ static bool parse_statement_list(token_t **tokens_, ast_t **out, symbol_table_t 
 		}
 	}
 
-	if(size == 1)
-	{
-		*out = statements[0];
-		free(statements);
-	}
-	else
-	{
-		statement_list_t *list;
-		list             = MALLOC_T(statement_list_t);
-		list->type       = AST_TYPE_STATEMENT_LIST;
-		list->size       = size;
-		list->exprs      = statements;
-		*out             = (ast_t*) list;
-	}
+	statement_list_t *list;
+	list             = MALLOC_T(statement_list_t);
+	list->type       = AST_TYPE_STATEMENT_LIST;
+	list->size       = size;
+	list->exprs      = statements;
+	list->table      = table;
+	*out             = (ast_t*) list;
 	*tokens_ = tokens + 1;
 	return true;
 }
@@ -883,6 +884,7 @@ static bool parse_function(token_t **tokens_, function_t **function, symbol_tabl
 	if(parse_function_proto(&tokens, function, table))
 	{
 		if(IS_NEWLINE(tokens[0])) tokens++;
+		symbol_table_add_function(table, *function);
 		if(!parse_statement_list(&tokens, &(*function)->statements, table))
 			ERROR();
 		*tokens_  = tokens;

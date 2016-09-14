@@ -12,6 +12,9 @@ $(BUILD_DIR)/Makefile: $(BUILD_DIR)
 run: $(BUILD_DIR)/Makefile
 	make -C $(BUILD_DIR) run
 
+test: $(BUILD_DIR)/Makefile
+	make -C $(BUILD_DIR) test
+
 dbg: $(BUILD_DIR)/Makefile
 	make -C $(BUILD_DIR) dbg
 

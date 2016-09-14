@@ -1,6 +1,20 @@
 cmake_minimum_required(VERSION 2.8)
 
-file(GLOB SRC *.c)
+set(SRC ast.c lexer.c parser.c string_common.c operators.c)
 file(GLOB HDR *.h)
 
-add_executable(compiler ${SRC} ${HDR})
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+
+add_library(compilerlib SHARED ${SRC} ${HDR})
+
+add_executable(compiler main.c)
+target_link_libraries(compiler compilerlib)
+
+add_executable(lexer lexer_main.c)
+target_link_libraries(lexer compilerlib)
+
+add_executable(parser parser_main.c)
+target_link_libraries(parser compilerlib)
+
+add_executable(parser_test parser_test_main.c)
+target_link_libraries(parser_test compilerlib ${CMAKE_DL_LIBS})

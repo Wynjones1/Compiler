@@ -11,6 +11,9 @@
     X(TOKEN_TYPE_COLON,     ":" ) \
     X(TOKEN_TYPE_SEMICOLON, ";" ) \
     X(TOKEN_TYPE_COMMA    , "," ) \
+    X(TOKEN_TYPE_ASSIGN,    "=" ) \
+    X(TOKEN_TYPE_LARROW,    "<-") \
+    X(TOKEN_TYPE_RARROW,    "->") \
     X(TOKEN_TYPE_OP_ADD,    "+" ) \
     X(TOKEN_TYPE_OP_SUB,    "-" ) \
     X(TOKEN_TYPE_OP_MUL,    "*" ) \
@@ -22,13 +25,14 @@
     X(TOKEN_TYPE_OP_GTE,    ">=") \
     X(TOKEN_TYPE_OP_EQ,     "==") \
     X(TOKEN_TYPE_OP_NEQ,    "!=") \
-    X(TOKEN_TYPE_ASSIGN,    "=")  \
-    X(TOKEN_TYPE_LARROW,    "<-") \
-    X(TOKEN_TYPE_RARROW,    "->")
 
 #define X_TOKEN_KEYWORD_LIST              \
     X(TOKEN_TYPE_KW_FUNCTION, "function") \
-    X(TOKEN_TYPE_KW_RETURN,   "return") 
+    X(TOKEN_TYPE_KW_RETURN,   "return")   \
+    X(TOKEN_TYPE_KW_IF,       "if")       \
+    X(TOKEN_TYPE_KW_ELIF,     "elif")     \
+    X(TOKEN_TYPE_KW_ELSE,     "else")     \
+    X(TOKEN_TYPE_KW_WHILE,    "while") 
 
 enum TOKEN_TYPE
 {

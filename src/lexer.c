@@ -44,6 +44,21 @@ static void list_append(token_t **tok, const char *data, enum TOKEN_TYPE type, s
     token_init((*tok) + count, type, data, size);
 }
 
+static enum TOKEN_TYPE get_id_type(const char *data, size_t size)
+{
+    // Check each keyword, if the ID matches return its type.
+#define X(TYPE, STRING)                                    \
+    if(    sizeof(STRING) == (size + 1)                    \
+        && strncmp(data, STRING, sizeof(STRING) - 1) == 0) \
+    {                                                      \
+        return TYPE;                                       \
+    }
+    X_TOKEN_KEYWORD_LIST
+#undef X
+    // Must not have been a keyword. So it's an ID.
+    return TOKEN_TYPE_ID;
+}
+
 static bool accept_identifier(const char *data, size_t *offset, enum TOKEN_TYPE *type)
 {
     size_t size = 0;
@@ -55,7 +70,7 @@ static bool accept_identifier(const char *data, size_t *offset, enum TOKEN_TYPE 
         {
             size++;
         }
-        *type   = TOKEN_TYPE_ID;
+        *type   = get_id_type(data, size);
         *offset = size;
         return true;
     }

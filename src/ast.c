@@ -14,6 +14,13 @@ ast_t *ast_list()
     return out;
 }
 
+ast_t *ast_make(enum AST_TYPE type)
+{
+    ast_t *out = malloc(sizeof(ast_t));
+    out->type = type;
+    return out;
+}
+
 void ast_list_append(ast_t *list, ast_t *elem)
 {
     AST_CHECK_TYPE(list, LIST);

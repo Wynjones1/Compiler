@@ -1,7 +1,6 @@
 #ifndef AST_H
 #define AST_H
 #include <stddef.h>
-#include "allocator.h"
 #include "lexer.h"
 #include "operators.h"
 
@@ -30,6 +29,7 @@ enum AST_TYPE
 
 typedef struct ast ast_t;
 typedef struct typedecl typedecl_t;
+typedef struct parse_state parse_state_t;
 
 struct typedecl
 {
@@ -51,8 +51,8 @@ struct ast
 
         struct
         {
-            ast_t  **data;
-            size_t   count;
+            size_t  count;
+            ast_t **data;
         }list;
 
         struct
@@ -112,27 +112,22 @@ struct ast
 
 /*  Create an AST list.
 
+    Parameters:
+        count - number of elements to copy
+        data  - data to copy
     Returns:
-        Empty AST list.
+        AST List containing count elemetns
 */
-ast_t *ast_list();
+ast_t *ast_list(size_t count, ast_t **data, parse_state_t *ps);
 
 /*  Create a generic AST.
 
     Parameters:
         type - Type of the AST to create.
-        al   - Allocator from which to allocate.
-               If al is NULL then malloc will be used.
+        ps   - TODO
 */
 
-ast_t *ast_make(enum AST_TYPE type, allocator_t *al);
-
-/*  Append an element to the end of and AST list.
-    Parameters:
-        list - list to which to append the element.
-        elem - element to be inserted.
-*/
-void ast_list_append(ast_t *list, ast_t *elem);
+ast_t *ast_make(enum AST_TYPE type, parse_state_t *ps);
 
 /* Return a string corresponding to the AST type.
    Parameters:

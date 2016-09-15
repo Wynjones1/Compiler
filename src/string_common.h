@@ -2,6 +2,7 @@
 #define STRING_COMMON_H
 #include <stddef.h>
 #include <stdbool.h>
+#include "allocator.h"
 
 /*  Copy a string
     Parameters:
@@ -9,7 +10,7 @@
 
 */
 
-const char *string_copy(const char *str);
+const char *string_copy(const char *str, allocator_t *al);
 
 /*  Copy a string up to a certain size
 
@@ -20,7 +21,7 @@ const char *string_copy(const char *str);
         n   - copy at most n characters
 
 */
-const char *string_copy_n(const char *str, size_t n);
+const char *string_copy_n(const char *str, size_t n, allocator_t *al);
 
 /* Read a file into a string
 

@@ -3,12 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *string_copy(const char *str)
+const char *string_copy(const char *str, allocator_t *al)
 {
-    return string_copy_n(str, -1);
+    return string_copy_n(str, -1, al);
 }
 
-const char *string_copy_n(const char *str, size_t n)
+const char *string_copy_n(const char *str, size_t n, allocator_t *al)
 {
     //TODO: check str is valid.
     size_t len = strlen(str);
@@ -16,7 +16,15 @@ const char *string_copy_n(const char *str, size_t n)
     {
         len = n;
     }
-    char *out = malloc(len + 1);
+    char *out;
+    if(al == NULL)
+    {
+        out = malloc(len + 1);
+    }
+    else
+    {
+        out = allocator_new(al, n + 1);
+    }
     //TODO: error checking for malloc
     memcpy(out, str, len);
     out[len] = '\0';

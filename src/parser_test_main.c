@@ -67,11 +67,9 @@ int main(int argc, char **argv)
     printf("================================(Input Data)================================\n");
     printf("%s\n", data);
     printf("============================================================================\n");
-    token_t *toks;
-    size_t num_tokens;
 
-    tokenise(data, &toks, &num_tokens);
-    parse_state_t ps = parse_state_init(toks, num_tokens);
+    token_list_t *token_list = tokenise(data);
+    parse_state_t ps = parse_state_init(token_list->tokens, token_list->size);
     ast_t *out = func(&ps);
     if(out == NULL)
     {
@@ -79,5 +77,6 @@ int main(int argc, char **argv)
         return 1;
     }
     printf("Success\n");
+    token_list_delete(token_list);
     return 0;
 }

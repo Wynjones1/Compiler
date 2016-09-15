@@ -8,6 +8,7 @@ set(SRC
     operators.c
     parser.c
     string_common.c
+    list.c
 )
 
 file(GLOB HDR *.h)

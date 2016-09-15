@@ -27,11 +27,8 @@ int main(int argc, char **argv)
 
     data[size] = '\0';
 
-    token_t *toks;
-    size_t num_tokens;
-
-    tokenise(data, &toks, &num_tokens);
-    ast_t *ast = parse(toks, num_tokens);
+    token_list_t *tl = tokenise(data);
+    ast_t *ast = parse(tl->tokens, tl->size);
     if(ast == NULL)
     {
         fprintf(stderr, "Parse Failed.\n");

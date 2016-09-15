@@ -122,13 +122,15 @@ ast_t *eval_(ast_t *ast, eval_state_t *state)
 
 ast_t *make_entry_node(void)
 {
+#if 0
     ast_t *id = ast_make(AST_TYPE_ID, NULL);
-    id->id = string_copy("main");
+    id->id = string_copy("main", NULL);
 
     ast_t *out = ast_make(AST_TYPE_FUNC_CALL, NULL);
     out->func_call.func   = out;
     out->func_call.params = ast_list();
     return out;
+#endif
 }
 
 ast_t *eval(ast_t *ast)

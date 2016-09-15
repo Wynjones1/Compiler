@@ -8,10 +8,10 @@ typedef struct region region_t;
 /* A region is a block of memory used by the allocator.*/
 struct region
 {
-    size_t    size; // Total number of bytes in the region.
-    size_t    used; // Number of bytes used in the region.
-    bool      start; // Indicates if this is the start of the region.
-    region_t *prev; // Previous region.
+    size_t    size;   // Total number of bytes in the region.
+    size_t    used;   // Number of bytes used in the region.
+    bool      start;  // Indicates if this is the start of the region.
+    region_t *prev;   // Previous region.
     char      data[]; // Data allocated for the region.
 };
 

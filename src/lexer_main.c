@@ -24,10 +24,7 @@ int main(int argc, char **argv)
 
     data[size] = '\0';
 
-    token_t *toks;
-    size_t num_tokens;
-
-    tokenise(data, &toks, &num_tokens);
-    printf("Found %lu tokens\n", num_tokens);
+    token_list_t *tl = tokenise(data);
+    printf("Found %lu tokens\n", tl->size);
     return 0;
 }

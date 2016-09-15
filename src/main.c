@@ -7,15 +7,13 @@ int main(int argc, char **argv)
     const char *filename = argv[1];
     const char *file = string_read_file(filename);
 
-    token_t *tokens;
-    size_t count;
-    tokenise(file, &tokens, &count);
-    printf("Found %lu tokens\n", count);
-    for(size_t i = 0; i < count; i++)
+    token_list_t *tl = tokenise(file);
+    printf("Found %lu tokens\n", tl->size);
+    for(size_t i = 0; i < tl->size; i++)
     {
-        if(tokens[i].value != NULL)
+        if(tl->tokens[i].value != NULL)
         {
-            printf("%s\n", tokens[i].value);
+            printf("%s\n", tl->tokens[i].value);
         }
     }
     return 0;

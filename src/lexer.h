@@ -58,6 +58,12 @@ typedef struct token
     uint32_t         pos;
 }token_t;
 
+typedef struct token_list_t
+{
+    size_t   size;
+    token_t *tokens;
+}token_list_t;
+
 /*  Initialise token
     Parameters:
         token - token to initialise, must point to valid memory. 
@@ -80,9 +86,11 @@ void token_deinit(token_t *token);
 
     Parameters:
         data - string containing the source code.
-        list - on return contains the token list.
-        num  - on return contains the number of tokens created.
+
+    Returns:
+        list of tokens.
 */
-void tokenise(const char *data, token_t **list, size_t *num);
+token_list_t *tokenise(const char *data);
+void token_list_delete(token_list_t *);
 
 #endif

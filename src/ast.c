@@ -1,41 +1,37 @@
 #include "ast.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
+#include "parser.h"
+#include "allocator.h"
 
 #define AST_CHECK_TYPE(AST, TYPE) \
     assert(AST->type== AST_TYPE_ ## TYPE);
 
-ast_t *ast_list()
+ast_t *ast_list(size_t count, ast_t **data, parse_state_t *ps)
 {
-    ast_t *out = malloc(sizeof(ast_t));
-    out->type       = AST_TYPE_LIST;
-    out->list.data  = NULL;
-    out->list.count = 0;
+    ast_t *out = allocator_new(ps->al, sizeof(ast_t));
+    out->type  = AST_TYPE_LIST;
+    out->list.count = count;
+    out->list.data = allocator_new(ps->al, sizeof(ast_t*) * count);
+    memcpy(out->list.data, data, sizeof(ast_t*) * count);
     return out;
 }
 
-ast_t *ast_make(enum AST_TYPE type, allocator_t *al)
+ast_t *ast_make(enum AST_TYPE type, parse_state_t *ps)
 {
     
     ast_t *out;
-    if(al == NULL)
+    if(ps == NULL)
     {
         out = malloc(sizeof(ast_t));
     }
     else
     {
-        out = allocator_new(al, sizeof(ast_t));
+        out = allocator_new(ps->al, sizeof(ast_t));
     }
     out->type = type;
     return out;
-}
-
-void ast_list_append(ast_t *list, ast_t *elem)
-{
-    AST_CHECK_TYPE(list, LIST);
-    list->list.count++;
-    list->list.data = realloc(list->list.data, sizeof(ast_t*) * list->list.count);
-    list->list.data[list->list.count - 1] = elem;
 }
 
 const char *const ast_type_string(enum AST_TYPE type)

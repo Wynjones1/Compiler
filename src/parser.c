@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "operators.h"
+#include "list.h"
 #include "parser.h"
 #include "string_common.h"
 
@@ -19,19 +20,19 @@ parse_state_t parse_state_init(token_t *toks, size_t count)
     return out;
 }
 
-token_t *current_token(parse_state_t *ps)
+static token_t *current_token(parse_state_t *ps)
 {
     return ps->toks + ps->pos;
 }
 
-token_t *next_token(parse_state_t *ps)
+static token_t *next_token(parse_state_t *ps)
 {
     token_t *out = current_token(ps);
     ps->pos += 1;
     return out;
 }
 
-token_t *accept(parse_state_t *ps, enum TOKEN_TYPE type)
+static token_t *accept(parse_state_t *ps, enum TOKEN_TYPE type)
 {
     if(current_token(ps)->type == type)
     {
@@ -95,8 +96,8 @@ ast_t *parse_type(parse_state_t *ps)
 {
     token_t *token;
     ACCEPT_OR_FAIL_VAR(token, ps, TOKEN_TYPE_ID);
-    ast_t *out = ast_make(AST_TYPE_TYPE_DECL);
-    out->decl.id = string_copy(token->value);
+    ast_t *out = ast_make(AST_TYPE_TYPE_DECL, ps);
+    out->decl.id = string_copy(token->value, ps->al);
     return out;
 }
 
@@ -107,9 +108,9 @@ ast_t *parse_param(parse_state_t *ps)
     token_t *id;
     ACCEPT_OR_FAIL_VAR(id, ps, TOKEN_TYPE_ID);
 
-    ast_t *out = ast_make(AST_TYPE_PARAM);
+    ast_t *out = ast_make(AST_TYPE_PARAM, ps);
     out->param.type = type;
-    out->param.name = string_copy(id->value);
+    out->param.name = string_copy(id->value, ps->al);
     return out;
 }
 
@@ -117,8 +118,8 @@ ast_t *parse_id(parse_state_t *ps)
 {
     token_t *tok;
     ACCEPT_OR_FAIL_VAR(tok, ps, TOKEN_TYPE_ID);
-    ast_t *out = ast_make(AST_TYPE_ID);
-    out->int_literal = string_copy(tok->value);
+    ast_t *out = ast_make(AST_TYPE_ID, ps);
+    out->int_literal = string_copy(tok->value, ps->al);
     return out;
 }
 
@@ -126,22 +127,25 @@ ast_t *parse_integer_literal(parse_state_t *ps)
 {
     token_t *tok;
     ACCEPT_OR_FAIL_VAR(tok, ps, TOKEN_TYPE_INT_LITERAL);
-    ast_t *out = ast_make(AST_TYPE_INT_LIT);
-    out->int_literal = string_copy(tok->value);
+    ast_t *out = ast_make(AST_TYPE_INT_LIT, ps);
+    out->int_literal = string_copy(tok->value, ps->al);
     return out;
 }
 
 
 ast_t *parse_expression_list(parse_state_t *ps)
 {
-    ast_t *list = ast_list();
+    list_t *list = list_init(sizeof(ast_t*));
     do
     {
         ast_t *expr = PARSE(expression, ps);
-        ast_list_append(list, expr);
+        list_push(list, &expr);
     }
     while(accept(ps, TOKEN_TYPE_COMMA));
-    return list;
+    /* Copy the data from the list to an AST list */
+    ast_t *out = ast_list(list_count(list), list_data(list), ps);
+    list_delete(list);
+    return out;
 }
 
 ast_t *parse_func_call(parse_state_t *ps)
@@ -151,7 +155,7 @@ ast_t *parse_func_call(parse_state_t *ps)
     ast_t *params = PARSE(expression_list, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_RPAREN);
 
-    ast_t *out = ast_make(AST_TYPE_FUNC_CALL);
+    ast_t *out = ast_make(AST_TYPE_FUNC_CALL, ps);
     out->func_call.func   = func;
     out->func_call.params = params;
     return out;
@@ -172,7 +176,7 @@ ast_t *parse_operation(parse_state_t *ps)
         return NULL;
     }
     token_t *op = next_token(ps);
-    ast_t *out = ast_make(AST_TYPE_OPERATION);
+    ast_t *out = ast_make(AST_TYPE_OPERATION, ps);
     out->op.type = op->type;
     return out;
 }
@@ -302,7 +306,7 @@ ast_t *parse_expression(parse_state_t *ps)
 ast_t *parse_return(parse_state_t *ps)
 {
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_KW_RETURN);
-    ast_t *out = ast_make(AST_TYPE_RETURN);
+    ast_t *out = ast_make(AST_TYPE_RETURN, ps);
     out->return_.expr = PARSE(expression, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_SEMICOLON);
     return out;
@@ -322,9 +326,9 @@ ast_t *parse_variable_declaration(parse_state_t *ps)
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_SEMICOLON);
 
     // Create the variable declaration node.
-    ast_t *out = ast_make(AST_TYPE_VAR_DECL);
+    ast_t *out = ast_make(AST_TYPE_VAR_DECL, ps);
     out->vardecl.type = type;
-    out->vardecl.name = string_copy(name->value);
+    out->vardecl.name = string_copy(name->value, ps->al);
     out->vardecl.expr = expr;
     return out;
 }
@@ -360,11 +364,11 @@ ast_t *parse_if_common(parse_state_t *ps)
     }
     else if(accept(ps, TOKEN_TYPE_KW_ELIF))
     {
-        fail = parse_if_common(ps);
+        fail = PARSE(if_common, ps);
     }
 
     // Create the "if"/"else"/"elif" node.
-    ast_t *out = ast_make(AST_TYPE_IF);
+    ast_t *out = ast_make(AST_TYPE_IF, ps);
     out->if_.cond    = cond;
     out->if_.success = success;
     out->if_.fail    = fail;
@@ -386,7 +390,7 @@ ast_t *parse_while(parse_state_t *ps)
     ast_t *stmt = PARSE(braced_stmt_list, ps);
 
     // Create the "while" node
-    ast_t *out = ast_make(AST_TYPE_WHILE);
+    ast_t *out = ast_make(AST_TYPE_WHILE, ps);
     out->while_.cond = cond;
     out->while_.stmt = stmt;
 }
@@ -414,11 +418,11 @@ ast_t *parse_list_generic(
             ast_t *(*func)(parse_state_t*),
             enum TOKEN_TYPE delimiter)
 {
-    ast_t *list = ast_list();
+    list_t *list = list_init(sizeof(ast_t*));
     ast_t *out  = parse_(func, ps);
     while(out)
     {
-        ast_list_append(list, out);
+        list_push(list, &out);
         if(   delimiter != TOKEN_TYPE_NONE 
            && !accept(ps, delimiter))
         {
@@ -426,7 +430,9 @@ ast_t *parse_list_generic(
         }
         out  = parse_(func, ps);
     }
-    return list;
+    ast_t *out_list = ast_list(list_count(list), list_data(list), ps);
+    list_delete(list);
+    return out_list;
 }
 
 
@@ -466,8 +472,8 @@ ast_t *parse_function(parse_state_t *ps)
     ast_t *stmts = PARSE(braced_stmt_list, ps);
 
     // Create the function AST
-    ast_t *out = ast_make(AST_TYPE_FUNCTION);
-    out->function.name        = string_copy(id->value);
+    ast_t *out = ast_make(AST_TYPE_FUNCTION, ps);
+    out->function.name        = string_copy(id->value, ps->al);
     out->function.params      = params;
     out->function.return_     = return_;
     out->function.statements  = stmts;
@@ -478,18 +484,20 @@ ast_t *parse(token_t *list, size_t num_toks)
 {
     parse_state_t ps = parse_state_init(list, num_toks);
 
-    ast_t *functions = ast_list();
+    list_t *functions = list_init(sizeof(ast_t*));
         
     while(current_token(&ps)->type != TOKEN_TYPE_NONE)
     {
         parse_state_t ps_old = ps;
         ast_t *function = parse_function(&ps);
-        ast_list_append(functions, function);
+        list_push(functions, &function);
         if(ps.pos == ps_old.pos)
         {
             fprintf(stderr, "Parse failed: No progress made.\n");
             exit(-1);
         }
     }
-    return functions;
+    ast_t *out = ast_list(list_count(functions), list_data(functions), &ps);
+    list_delete(functions);
+    return out;
 }

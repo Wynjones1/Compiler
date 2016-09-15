@@ -11,7 +11,7 @@ void token_init(token_t *token, enum TOKEN_TYPE type, const char *value, size_t 
     token->type = type;
     if(value != NULL)
     {
-        token->value = string_copy_n(value, size);
+        token->value = string_copy_n(value, size, NULL);
     }
     else
     {
@@ -24,11 +24,6 @@ void token_deinit(token_t *token)
     string_delete(token->value);
 }
 
-static token_t *list_init(void)
-{
-    return NULL;
-}
-
 /*  Append token data to a token list.
 
     Parameters:
@@ -36,12 +31,14 @@ static token_t *list_init(void)
         data  - start of the token string.
         type  - token type.
         size  - size of the token string.
-        count - size of the list.
 */
-static void list_append(token_t **tok, const char *data, enum TOKEN_TYPE type, size_t size, size_t count)
+static void token_list_append(token_list_t *list, const char *data, enum TOKEN_TYPE type, size_t size)
 {
-    *tok = realloc(*tok, sizeof(token_t) * (count + 1));
-    token_init((*tok) + count, type, data, size);
+    token_t *tok = list->tokens;
+    tok = realloc(tok, sizeof(token_t) * (list->size+ 1));
+    token_init(tok + list->size, type, data, size);
+    list->tokens = tok;
+    list->size += 1;
 }
 
 static enum TOKEN_TYPE get_id_type(const char *data, size_t size)
@@ -143,13 +140,13 @@ static bool accept_whitespace(const char *data, size_t *offset, enum TOKEN_TYPE 
     return false;
 }
 
-void tokenise(const char *data_, token_t **list_, size_t *count_)
+token_list_t *tokenise(const char *data_)
 {
     const char *data = data_;
     size_t size  = 0;
-    size_t count = 0;
     enum TOKEN_TYPE type;
-    token_t *list = list_init();
+    token_list_t *list = malloc(sizeof(token_list_t*));
+
     while(data[0] != '\0')
     {
         if(    accept_identifier(data, &size, &type)
@@ -159,8 +156,7 @@ void tokenise(const char *data_, token_t **list_, size_t *count_)
         {
             if(type != TOKEN_TYPE_WHITESPACE)
             {
-                list_append(&list, data, type, size, count);
-                count += 1;
+                token_list_append(list, data, type, size);
             }
             data  += size;
         }
@@ -170,7 +166,18 @@ void tokenise(const char *data_, token_t **list_, size_t *count_)
             exit(-1);
         }
     }
-    list_append(&list, NULL, TOKEN_TYPE_NONE, 0, count);
-    *list_  = list;
-    *count_ = count + 1;
+    token_list_append(list, NULL, TOKEN_TYPE_NONE, 0);
+    return list;
+}
+
+void token_list_delete(token_list_t *tl)
+{
+    for(unsigned int i = 0; i < tl->size; i++)
+    {
+        if(tl->tokens[i].value != NULL)
+        {
+            string_delete(tl->tokens[i].value);
+        }
+    }
+    free(tl);
 }

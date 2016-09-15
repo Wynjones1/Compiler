@@ -117,7 +117,7 @@ ast_t *parse_id(parse_state_t *ps)
     token_t *tok;
     ACCEPT_OR_FAIL_VAR(tok, ps, TOKEN_TYPE_ID);
     ast_t *out = ast_make(AST_TYPE_ID, ps);
-    out->int_literal = string_copy(tok->value, ps->al);
+    out->string = string_copy(tok->value, ps->al);
     return out;
 }
 
@@ -126,7 +126,7 @@ ast_t *parse_integer_literal(parse_state_t *ps)
     token_t *tok;
     ACCEPT_OR_FAIL_VAR(tok, ps, TOKEN_TYPE_INT_LITERAL);
     ast_t *out = ast_make(AST_TYPE_INT_LIT, ps);
-    out->int_literal = string_copy(tok->value, ps->al);
+    out->string = string_copy(tok->value, ps->al);
     return out;
 }
 

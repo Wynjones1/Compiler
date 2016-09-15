@@ -103,10 +103,9 @@ struct ast
             ast_t *params;
         }func_call;
 
-        const char *id;
-        const char *int_literal;
-
         typedecl_t decl;
+
+        const char *string;
     };
 };
 

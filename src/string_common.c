@@ -39,3 +39,8 @@ const char *string_read_file(const char *filename)
     out[size] = '\0';
     return out;
 }
+
+bool string_equal(const char *s0, const char *s1)
+{
+    return (strcmp(s0, s1) == 0);
+}

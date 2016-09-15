@@ -1,6 +1,7 @@
 #ifndef STRING_COMMON_H
 #define STRING_COMMON_H
 #include <stddef.h>
+#include <stdbool.h>
 
 /*  Copy a string
     Parameters:
@@ -29,5 +30,8 @@ const char *string_copy_n(const char *str, size_t n);
 const char *string_read_file(const char *filename);
 
 void        string_delete(const char *str);
+
+/* Returns true if the two strings are equal, false otherwise */
+bool string_equal(const char *s0, const char *s1);
 
 #endif

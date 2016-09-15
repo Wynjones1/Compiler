@@ -12,6 +12,7 @@
 parse_state_t parse_state_init(token_t *toks, size_t count)
 {
     parse_state_t out;
+    out.al    = allocator_init(1024);
     out.toks  = toks;
     out.count = count;
     out.pos   = 0;
@@ -67,9 +68,14 @@ ast_t *parse_(ast_t*(*func)(parse_state_t*), parse_state_t *ps)
 
     parse_state_t ps_new = *ps;
     ast_t *out = func(&ps_new);
+    allocator_push(ps->al);
     if(out)
     {
         *ps = ps_new;
+    }
+    else
+    {
+        allocator_pop(ps->al);
     }
     return out;
 }
@@ -179,7 +185,7 @@ struct sy_queue_stack
 
 void queue_push(struct sy_queue_stack *queue, ast_t *ast)
 {
-    assert(queue->size < 1024);
+    assert(queue->size< sizeof(queue->elems) / sizeof(*queue->elems));
     queue->elems[queue->size] = ast;
     queue->size++;
 }
@@ -256,8 +262,8 @@ ast_t *parse_expression(parse_state_t *ps)
             ast_t *o2;
             while( (o2 = stack_top(&stack)) )
             {
-                if(     get_assoc(o1) == LEFT  &&    get_precedence(o1) >  get_precedence(o2)
-                   || /*get_assoc(o2) == RIGHT && */ get_precedence(o1) >= get_precedence(o2))
+                if(     get_assoc(o1) == LEFT  &&    get_precedence(o1) >= get_precedence(o2)
+                   || /*get_assoc(o2) == RIGHT && */ get_precedence(o1) >  get_precedence(o2))
                 {
                     queue_push(&queue, o2);
                     stack_pop(&stack);
@@ -481,8 +487,9 @@ ast_t *parse(token_t *list, size_t num_toks)
         ast_list_append(functions, function);
         if(ps.pos == ps_old.pos)
         {
-            fprintf(stderr, "Parse failed.\n");
+            fprintf(stderr, "Parse failed: No progress made.\n");
             exit(-1);
         }
     }
+    return functions;
 }

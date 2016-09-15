@@ -1,9 +1,4 @@
-function add(int : a, int : b) -> int
+function main()
 {
-    return a;
-}
-
-function main() -> int
-{
-    return 10;
+    print(10);
 }

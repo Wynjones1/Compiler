@@ -1,24 +1,32 @@
 #ifndef AST_H
 #define AST_H
 #include <stddef.h>
+#include "allocator.h"
 #include "lexer.h"
 #include "operators.h"
 
+#define X_AST_TYPE_LIST \
+    X(FUNCTION)         \
+    X(TYPE_DECL)        \
+    X(PARAM)            \
+    X(LIST)             \
+    X(RETURN)           \
+    X(ID)               \
+    X(INT_LIT)          \
+    X(VAR_DECL)         \
+    X(WHILE)            \
+    X(IF)               \
+    X(OPERATION)        \
+    X(FUNC_CALL)
+
 enum AST_TYPE
 {
-    AST_TYPE_FUNCTION,
-    AST_TYPE_TYPE_DECL,
-    AST_TYPE_PARAM,
-    AST_TYPE_LIST,
-    AST_TYPE_RETURN,
-    AST_TYPE_ID,
-    AST_TYPE_INT_LIT,
-    AST_TYPE_VAR_DECL,
-    AST_TYPE_WHILE,
-    AST_TYPE_IF,
-    AST_TYPE_OPERATION,
-    AST_TYPE_FUNC_CALL,
+#define X(NAME) AST_TYPE_ ## NAME,
+    X_AST_TYPE_LIST
+#undef X
+    NUM_AST_TYPES,
 };
+
 
 typedef struct ast ast_t;
 typedef struct typedecl typedecl_t;
@@ -112,9 +120,12 @@ ast_t *ast_list();
 /*  Create a generic AST.
 
     Parameters:
-        type - type of the AST to create.
+        type - Type of the AST to create.
+        al   - Allocator from which to allocate.
+               If al is NULL then malloc will be used.
 */
-ast_t *ast_make(enum AST_TYPE type);
+
+ast_t *ast_make(enum AST_TYPE type, allocator_t *al);
 
 /*  Append an element to the end of and AST list.
     Parameters:
@@ -122,5 +133,14 @@ ast_t *ast_make(enum AST_TYPE type);
         elem - element to be inserted.
 */
 void ast_list_append(ast_t *list, ast_t *elem);
+
+/* Return a string corresponding to the AST type.
+   Parameters:
+        type - ast type for which to return the string
+
+   Returns:
+        string representing the ast type.
+*/
+const char *const ast_type_string(enum AST_TYPE type);
 
 #endif

@@ -2,6 +2,7 @@
 #define PARSER_H
 #include "lexer.h"
 #include "ast.h"
+#include "allocator.h"
 
 /*  Parse a list of tokens into an AST
     Parameters:
@@ -16,9 +17,10 @@ ast_t *parse(token_t *list, size_t num_toks);
 typedef struct parse_state parse_state_t;
 struct parse_state
 {
-    token_t *toks;
-    size_t   count;
-    size_t   pos;
+    token_t     *toks;
+    allocator_t *al;
+    size_t       count;
+    size_t       pos;
 };
 parse_state_t parse_state_init(token_t *toks, size_t count);
 

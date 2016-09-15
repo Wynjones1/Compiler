@@ -140,12 +140,20 @@ static bool accept_whitespace(const char *data, size_t *offset, enum TOKEN_TYPE 
     return false;
 }
 
+static token_list_t *token_list_make(void)
+{
+    token_list_t *list = malloc(sizeof(token_list_t));
+    list->size   = 0;
+    list->tokens = NULL;
+    return list;
+}
+
 token_list_t *tokenise(const char *data_)
 {
     const char *data = data_;
     size_t size  = 0;
     enum TOKEN_TYPE type;
-    token_list_t *list = malloc(sizeof(token_list_t*));
+    token_list_t *list = token_list_make();
 
     while(data[0] != '\0')
     {
@@ -178,6 +186,10 @@ void token_list_delete(token_list_t *tl)
         {
             string_delete(tl->tokens[i].value);
         }
+    }
+    if(tl->tokens)
+    {
+        free(tl->tokens);
     }
     free(tl);
 }

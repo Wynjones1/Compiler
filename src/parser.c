@@ -94,10 +94,9 @@ ast_t *parse_(ast_t*(*func)(parse_state_t*), parse_state_t *ps)
 
 ast_t *parse_type(parse_state_t *ps)
 {
-    token_t *token;
-    ACCEPT_OR_FAIL_VAR(token, ps, TOKEN_TYPE_ID);
+    ast_t *id = PARSE(id, ps);
     ast_t *out = ast_make(AST_TYPE_TYPE_DECL, ps);
-    out->decl.id = string_copy(token->value, ps->al);
+    out->decl.id = id;
     return out;
 }
 
@@ -105,12 +104,11 @@ ast_t *parse_param(parse_state_t *ps)
 {
     ast_t *type = PARSE(type, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_COLON);
-    token_t *id;
-    ACCEPT_OR_FAIL_VAR(id, ps, TOKEN_TYPE_ID);
+    ast_t *id = PARSE(id, ps);
 
     ast_t *out = ast_make(AST_TYPE_PARAM, ps);
     out->param.type = type;
-    out->param.name = string_copy(id->value, ps->al);
+    out->param.name = id;
     return out;
 }
 
@@ -316,8 +314,7 @@ ast_t *parse_variable_declaration(parse_state_t *ps)
 {
     ast_t *type = PARSE(type, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_COLON);
-    token_t *name;
-    ACCEPT_OR_FAIL_VAR(name, ps, TOKEN_TYPE_ID);
+    ast_t *name = PARSE(id, ps);
     ast_t *expr = NULL;
     if(accept(ps, TOKEN_TYPE_ASSIGN))
     {
@@ -328,7 +325,7 @@ ast_t *parse_variable_declaration(parse_state_t *ps)
     // Create the variable declaration node.
     ast_t *out = ast_make(AST_TYPE_VAR_DECL, ps);
     out->vardecl.type = type;
-    out->vardecl.name = string_copy(name->value, ps->al);
+    out->vardecl.name = name;
     out->vardecl.expr = expr;
     return out;
 }
@@ -454,7 +451,7 @@ ast_t *parse_function(parse_state_t *ps)
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_KW_FUNCTION);
 
     // Get the functions name.
-    token_t *id = accept(ps, TOKEN_TYPE_ID);
+    ast_t *name = PARSE(id, ps);
 
     // Parse the parameters.
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_LPAREN);
@@ -473,7 +470,7 @@ ast_t *parse_function(parse_state_t *ps)
 
     // Create the function AST
     ast_t *out = ast_make(AST_TYPE_FUNCTION, ps);
-    out->function.name        = string_copy(id->value, ps->al);
+    out->function.name        = name;
     out->function.params      = params;
     out->function.return_     = return_;
     out->function.statements  = stmts;

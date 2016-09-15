@@ -59,6 +59,7 @@ int main(int argc, char **argv)
         memcpy(data + size, buffer, read);
         size += read;
     }
+    fclose(fp);
 
     data[size] = '\0';
 
@@ -69,6 +70,9 @@ int main(int argc, char **argv)
     printf("============================================================================\n");
 
     token_list_t *token_list = tokenise(data);
+
+    free(data);
+
     parse_state_t ps = parse_state_init(token_list->tokens, token_list->size);
     ast_t *out = func(&ps);
     if(out == NULL)
@@ -78,5 +82,6 @@ int main(int argc, char **argv)
     }
     printf("Success\n");
     token_list_delete(token_list);
+    allocator_delete(ps.al);
     return 0;
 }

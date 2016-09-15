@@ -33,7 +33,7 @@ typedef struct parse_state parse_state_t;
 
 struct typedecl
 {
-    const char *id;
+    ast_t *id;
 };
 
 struct ast
@@ -43,10 +43,10 @@ struct ast
     {
         struct
         {
-            const char *name;
-            ast_t      *params;
-            ast_t      *return_;
-            ast_t      *statements;
+            ast_t *name;
+            ast_t *params;
+            ast_t *return_;
+            ast_t *statements;
         }function;
 
         struct
@@ -57,15 +57,15 @@ struct ast
 
         struct
         {
-            ast_t      *type;
-            const char *name;
+            ast_t *type;
+            ast_t *name;
         }param;
 
         struct
         {
-            ast_t      *type;
-            const char *name;
-            ast_t      *expr;
+            ast_t *type;
+            ast_t *name;
+            ast_t *expr;
         }vardecl;
 
         /* Any infix or unary operator

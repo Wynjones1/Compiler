@@ -85,7 +85,7 @@ void allocator_pop(allocator_t *al)
     al->current = r;
 }
 
-void allocate_delete(allocator_t *al)
+void allocator_delete(allocator_t *al)
 {
     region_t *r = al->current;
     while(r != NULL)

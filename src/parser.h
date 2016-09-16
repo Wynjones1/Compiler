@@ -12,7 +12,7 @@
     Returns:
         AST of the program described by list.
 */
-ast_t *parse(token_t *list, size_t num_toks);
+ast_t *parse(token_list_t *tl, allocator_t *alloc);
 
 typedef struct parse_state parse_state_t;
 struct parse_state
@@ -22,7 +22,8 @@ struct parse_state
     size_t       count;
     size_t       pos;
 };
-parse_state_t parse_state_init(token_t *toks, size_t count);
+
+parse_state_t *parse_state_init(token_list_t *tl, allocator_t *alloc);
 
 ast_t *parse_braced_stmt_list(parse_state_t *ps);
 ast_t *parse_expression(parse_state_t *ps);

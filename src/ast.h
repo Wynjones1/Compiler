@@ -135,6 +135,6 @@ ast_t *ast_make(enum AST_TYPE type, parse_state_t *ps);
    Returns:
         string representing the ast type.
 */
-const char *const ast_type_string(enum AST_TYPE type);
+const char *ast_type_string(enum AST_TYPE type);
 
 #endif

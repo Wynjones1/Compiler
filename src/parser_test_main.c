@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "ast.h"
 #include "parser.h"
+#include "string_common.h"
 #include <errno.h>
 
 typedef ast_t *(*parse_function_t)(parse_state_t *);
@@ -73,8 +74,9 @@ int main(int argc, char **argv)
 
     free(data);
 
-    parse_state_t ps = parse_state_init(token_list->tokens, token_list->size);
-    ast_t *out = func(&ps);
+    allocator_t *allocator = allocator_init(1024);
+    parse_state_t *ps = parse_state_init(token_list, allocator);
+    ast_t *out = func(ps);
     if(out == NULL)
     {
         printf("Failed\n");
@@ -82,6 +84,6 @@ int main(int argc, char **argv)
     }
     printf("Success\n");
     token_list_delete(token_list);
-    allocator_delete(ps.al);
+    allocator_delete(allocator);
     return 0;
 }

@@ -2,6 +2,7 @@
 #define STRING_COMMON_H
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "allocator.h"
 
 /*  Copy a string
@@ -27,8 +28,21 @@ const char *string_copy_n(const char *str, size_t n, allocator_t *al);
 
     Parameters:
         filename - filename from which to read the string.
+
+    Return:
+        string with contents of the file.
 */
 const char *string_read_file(const char *filename);
+
+/* Read a file into a string
+
+    Parameters:
+        fp - file pointer to file open with "r" mode.
+
+    Return:
+        string with contents of the file.
+*/
+const char *string_read_fp(FILE *fp);
 
 void        string_delete(const char *str);
 

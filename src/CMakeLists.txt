@@ -13,7 +13,8 @@ set(SRC
 
 file(GLOB HDR *.h)
 
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-return-type -Wno-unused-parameter -Wno-unused-variable")
 
 add_library(compilerlib SHARED ${SRC} ${HDR})
 

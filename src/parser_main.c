@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "string_common.h"
 
 int main(int argc, char **argv)
 {
@@ -10,22 +11,12 @@ int main(int argc, char **argv)
     {
         fp = fopen(argv[1], "r");
     }
-
-    char buffer[1024];
-    char *data = NULL;
-    size_t size = 0;
-    while(!feof(fp))
-    {
-        size_t read = fread(buffer, 1, 1024, fp);
-        data = realloc(data, size + read + 1);
-        memcpy(data + size, buffer, read);
-        size += read;
-    }
-
-    data[size] = '\0';
-
+    const char *data = string_read_fp(fp);
     token_list_t *tl = tokenise(data);
-    ast_t *d = parse(tl->tokens, tl->size);
+
+
+    allocator_t *alloc = allocator_init(1024);
+    ast_t *d = parse(tl, alloc);
     return 0;
 }
 

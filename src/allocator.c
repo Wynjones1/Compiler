@@ -113,3 +113,8 @@ void allocator_delete(allocator_t *al)
     }
     free(al);
 }
+
+void allocator_forget(allocator_t *al)
+{
+    al->num_marks -= 1;
+}

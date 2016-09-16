@@ -10,13 +10,13 @@
 
 #define DEBUG_PARSER (1)
 
-parse_state_t parse_state_init(token_t *toks, size_t count)
+parse_state_t *parse_state_init(token_list_t *tl, allocator_t *allocator)
 {
-    parse_state_t out;
-    out.al    = allocator_init(1024);
-    out.toks  = toks;
-    out.count = count;
-    out.pos   = 0;
+    parse_state_t *out = malloc(sizeof(parse_state_t));
+    out->al    = allocator;
+    out->toks  = tl->tokens;
+    out->count = tl->size;
+    out->pos   = 0;
     return out;
 }
 
@@ -73,6 +73,7 @@ ast_t *parse_(ast_t*(*func)(parse_state_t*), parse_state_t *ps)
     if(out)
     {
         *ps = ps_new;
+        allocator_forget(ps->al);
     }
     else
     {
@@ -264,8 +265,8 @@ ast_t *parse_expression(parse_state_t *ps)
             ast_t *o2;
             while( (o2 = stack_top(&stack)) )
             {
-                if(     get_assoc(o1) == LEFT  &&    get_precedence(o1) >= get_precedence(o2)
-                   || /*get_assoc(o2) == RIGHT && */ get_precedence(o1) >  get_precedence(o2))
+                if(   (   get_assoc(o1) == LEFT  &&    get_precedence(o1) >= get_precedence(o2))
+                   || (/* get_assoc(o2) == RIGHT && */ get_precedence(o1) >  get_precedence(o2)))
                 {
                     queue_push(&queue, o2);
                     stack_pop(&stack);
@@ -470,31 +471,31 @@ ast_t *parse_function(parse_state_t *ps)
 
     // Create the function AST
     ast_t *out = ast_make(AST_TYPE_FUNCTION, ps);
-    out->function.name        = name;
-    out->function.params      = params;
-    out->function.return_     = return_;
-    out->function.statements  = stmts;
+    out->function.name       = name;
+    out->function.params     = params;
+    out->function.return_    = return_;
+    out->function.statements = stmts;
     return out;
 }
 
-ast_t *parse(token_t *list, size_t num_toks)
+ast_t *parse(token_list_t *tl, allocator_t *alloc)
 {
-    parse_state_t ps = parse_state_init(list, num_toks);
+    parse_state_t *ps = parse_state_init(tl, alloc);
 
     list_t *functions = list_init(sizeof(ast_t*));
         
-    while(current_token(&ps)->type != TOKEN_TYPE_NONE)
+    while(current_token(ps)->type != TOKEN_TYPE_NONE)
     {
-        parse_state_t ps_old = ps;
-        ast_t *function = parse_function(&ps);
+        size_t start_pos = ps->pos;
+        ast_t *function = parse_function(ps);
         list_push(functions, &function);
-        if(ps.pos == ps_old.pos)
+        if(ps->pos == start_pos)
         {
             fprintf(stderr, "Parse failed: No progress made.\n");
             exit(-1);
         }
     }
-    ast_t *out = ast_list(list_count(functions), list_data(functions), &ps);
+    ast_t *out = ast_list(list_count(functions), list_data(functions), ps);
     list_delete(functions);
     return out;
 }

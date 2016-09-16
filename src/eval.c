@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "string_common.h"
+#include "parser.h"
 #include <assert.h>
 
 typedef struct symbol_table symbol_table_t;
@@ -28,13 +29,14 @@ symbol_table_t *symtab_init(symbol_table_t *parent)
 typedef struct eval_state
 {
     symbol_table_t *table;
+    allocator_t    *al;
 }eval_state_t;
 
 ast_t *query_table(symbol_table_t *table, const char *symbol)
 {
     while(table)
     {
-        for(int i = 0; i < table->size; i++)
+        for(size_t i = 0; i < table->size; i++)
         {
             if(string_equal(table->data[i].id, symbol))
             {
@@ -46,10 +48,11 @@ ast_t *query_table(symbol_table_t *table, const char *symbol)
     return NULL;
 }
 
-eval_state_t *eval_state_init(void)
+eval_state_t *eval_state_init(allocator_t *al)
 {
     eval_state_t *out = malloc(sizeof(eval_state_t));
     out->table = symtab_init(NULL);
+    out->al = al;
     return out;
 }
 
@@ -120,25 +123,24 @@ ast_t *eval_(ast_t *ast, eval_state_t *state)
     exit(-1);
 }
 
-ast_t *make_entry_node(void)
+ast_t *make_entry_node(allocator_t *alloc)
 {
-#if 0
-    ast_t *id = ast_make(AST_TYPE_ID, NULL);
-    id->id = string_copy("main", NULL);
+    parse_state_t *ps = parse_state_init(NULL, alloc);
+    ast_t *id = ast_make(AST_TYPE_ID, ps);
+    id->string = string_copy("main", alloc);
 
-    ast_t *out = ast_make(AST_TYPE_FUNC_CALL, NULL);
+    ast_t *out = ast_make(AST_TYPE_FUNC_CALL, ps);
     out->func_call.func   = out;
-    out->func_call.params = ast_list();
+    out->func_call.params = ast_list(0, NULL, ps);
     return out;
-#endif
 }
 
-ast_t *eval(ast_t *ast)
+ast_t *eval(ast_t *ast, allocator_t *al)
 {
     printf("Starting to evaluate.\n");
-    eval_state_t *state = eval_state_init();
+    eval_state_t *state = eval_state_init(al);
 
-    ast_t *entry_point = make_entry_node();
+    ast_t *entry_point = make_entry_node(al);
 
     return eval_(entry_point, state);
 }

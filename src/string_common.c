@@ -36,9 +36,13 @@ void string_delete(const char *str)
     free((char*)str);
 }
 
-const char *string_read_file(const char *filename)
+bool string_equal(const char *s0, const char *s1)
 {
-    FILE *fp = fopen(filename, "r");
+    return (strcmp(s0, s1) == 0);
+}
+
+const char *string_read_fp(FILE *fp)
+{
     fseek(fp, 0, SEEK_END);
     size_t size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
@@ -48,7 +52,8 @@ const char *string_read_file(const char *filename)
     return out;
 }
 
-bool string_equal(const char *s0, const char *s1)
+const char *string_read_file(const char *filename)
 {
-    return (strcmp(s0, s1) == 0);
+    FILE *fp = fopen(filename, "r");
+    return string_read_fp(fp);
 }

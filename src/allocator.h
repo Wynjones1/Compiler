@@ -35,4 +35,7 @@ void allocator_push(allocator_t *allocator);
 */
 void allocator_pop(allocator_t *allocator);
 
+/* Remove the last mark from the allocator. */
+void allocator_forget(allocator_t *allocator);
+
 #endif

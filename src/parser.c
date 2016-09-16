@@ -218,6 +218,7 @@ static enum OPERATOR get_op_type(ast_t *ast)
 {
     return ((ast->type == AST_TYPE_BINARY_OPERATION) ? ast->binary_op.type : ast->unary_op.type);
 }
+
 int get_precedence(ast_t *op)
 {
     enum OPERATOR type = get_op_type(op);

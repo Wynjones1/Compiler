@@ -9,21 +9,21 @@ enum ACCOCIATIVITY
 };
 
 #define X_OPERATOR_LIST \
-    X(ADD, 4, LEFT) \
-    X(SUB, 4, LEFT) \
-    X(MUL, 3, LEFT) \
-    X(DIV, 3, LEFT) \
-    X(MOD, 3, LEFT) \
-    X(LT , 6, LEFT) \
-    X(LTE, 6, LEFT) \
-    X(GT , 6, LEFT) \
-    X(GTE, 6, LEFT) \
-    X(EQ , 7, LEFT) \
-    X(NEQ, 7, LEFT)
+    X(ADD, 4, 2, LEFT) \
+    X(SUB, 4, 2, LEFT) \
+    X(MUL, 3, 2, LEFT) \
+    X(DIV, 3, 2, LEFT) \
+    X(MOD, 3, 2, LEFT) \
+    X(LT , 6, 2, LEFT) \
+    X(LTE, 6, 2, LEFT) \
+    X(GT , 6, 2, LEFT) \
+    X(GTE, 6, 2, LEFT) \
+    X(EQ , 7, 2, LEFT) \
+    X(NEQ, 7, 2, LEFT)
 
 enum OPERATOR
 {
-#define X(NAME, PREC, ASSOC) OPERATOR_ ## NAME = TOKEN_TYPE_OP_ ## NAME,
+#define X(NAME, PREC, NUM_ARGS, ASSOC) OPERATOR_ ## NAME = TOKEN_TYPE_OP_ ## NAME,
     X_OPERATOR_LIST
 #undef X
 };

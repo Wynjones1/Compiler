@@ -86,7 +86,10 @@ ast_t *eval_WHILE(ast_t *ast, eval_state_t *state)
 ast_t *eval_IF(ast_t *ast, eval_state_t *state)
 {}
 
-ast_t *eval_OPERATION(ast_t *ast, eval_state_t *state)
+ast_t *eval_BINARY_OPERATION(ast_t *ast, eval_state_t *state)
+{}
+
+ast_t *eval_UNARY_OPERATION(ast_t *ast, eval_state_t *state)
 {}
 
 ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
@@ -126,13 +129,7 @@ ast_t *eval_(ast_t *ast, eval_state_t *state)
 ast_t *make_entry_node(allocator_t *alloc)
 {
     parse_state_t *ps = parse_state_init(NULL, alloc);
-    ast_t *id = ast_make(AST_TYPE_ID, ps);
-    id->string = string_copy("main", alloc);
-
-    ast_t *out = ast_make(AST_TYPE_FUNC_CALL, ps);
-    out->func_call.func   = out;
-    out->func_call.params = ast_list(0, NULL, ps);
-    return out;
+    return ast_func_call(ast_id("main", ps), ast_list(0, NULL, ps), ps);
 }
 
 ast_t *eval(ast_t *ast, allocator_t *al)

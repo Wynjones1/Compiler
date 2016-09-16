@@ -13,10 +13,16 @@ set(SRC
 
 file(GLOB HDR *.h)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-return-type -Wno-unused-parameter -Wno-unused-variable")
+add_c_flags_if_available(-Wall -Wextra -Werror)
+add_c_flags_if_available(-Wno-return-type -Wno-unused-parameter -Wno-unused-variable)
 
-add_library(compilerlib SHARED ${SRC} ${HDR})
+add_c_flags_if_available(/wd4715 /wd4716)
+
+if(MSVC)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
+
+add_library(compilerlib STATIC ${SRC} ${HDR})
 
 add_executable(compiler main.c)
 target_link_libraries(compiler compilerlib)
@@ -30,5 +36,4 @@ target_link_libraries(parser compilerlib)
 add_executable(eval eval_main.c)
 target_link_libraries(eval compilerlib)
 
-add_executable(parser_test parser_test_main.c)
-target_link_libraries(parser_test compilerlib ${CMAKE_DL_LIBS})
+#add_subdirectory(python)

@@ -96,9 +96,9 @@ ast_t *parse_(ast_t*(*func)(parse_state_t*), parse_state_t *ps)
 ast_t *parse_type(parse_state_t *ps)
 {
     ast_t *id = PARSE(id, ps);
-    ast_t *out = ast_make(AST_TYPE_TYPE_DECL, ps);
-    out->decl.id = id;
-    return out;
+    typedecl_t *td = allocator_new(ps->al, sizeof(typedecl_t));
+    td->id = id;
+    return ast_decl(td, ps);
 }
 
 ast_t *parse_param(parse_state_t *ps)
@@ -107,28 +107,21 @@ ast_t *parse_param(parse_state_t *ps)
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_COLON);
     ast_t *id = PARSE(id, ps);
 
-    ast_t *out = ast_make(AST_TYPE_PARAM, ps);
-    out->param.type = type;
-    out->param.name = id;
-    return out;
+    return ast_param(type, id, ps);
 }
 
 ast_t *parse_id(parse_state_t *ps)
 {
     token_t *tok;
     ACCEPT_OR_FAIL_VAR(tok, ps, TOKEN_TYPE_ID);
-    ast_t *out = ast_make(AST_TYPE_ID, ps);
-    out->string = string_copy(tok->value, ps->al);
-    return out;
+    return ast_id(tok->value, ps);
 }
 
 ast_t *parse_integer_literal(parse_state_t *ps)
 {
     token_t *tok;
     ACCEPT_OR_FAIL_VAR(tok, ps, TOKEN_TYPE_INT_LITERAL);
-    ast_t *out = ast_make(AST_TYPE_INT_LIT, ps);
-    out->string = string_copy(tok->value, ps->al);
-    return out;
+    return ast_int_literal(tok->value, ps);
 }
 
 
@@ -154,10 +147,7 @@ ast_t *parse_func_call(parse_state_t *ps)
     ast_t *params = PARSE(expression_list, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_RPAREN);
 
-    ast_t *out = ast_make(AST_TYPE_FUNC_CALL, ps);
-    out->func_call.func   = func;
-    out->func_call.params = params;
-    return out;
+    return ast_func_call(func, params, ps);
 }
 
 ast_t *parse_sub_expression(parse_state_t *ps)
@@ -175,9 +165,8 @@ ast_t *parse_operation(parse_state_t *ps)
         return NULL;
     }
     token_t *op = next_token(ps);
-    ast_t *out = ast_make(AST_TYPE_OPERATION, ps);
-    out->op.type = op->type;
-    return out;
+    // The actual tree nodes will be filled in later.
+    return ast_binary_op((enum OPERATOR_TYPE)op->type, ps);
 }
 
 struct sy_queue_stack
@@ -225,9 +214,13 @@ ast_t *stack_top(struct sy_queue_stack *stack)
     return NULL;
 }
 
+static enum OPERATOR get_op_type(ast_t *ast)
+{
+    return ((ast->type == AST_TYPE_BINARY_OPERATION) ? ast->binary_op.type : ast->unary_op.type);
+}
 int get_precedence(ast_t *op)
 {
-    enum OPERATOR type = op->op.type;
+    enum OPERATOR type = get_op_type(op);
 #define X(NAME, PREC, ASSOC) if(type == OPERATOR_ ## NAME) return PREC;
     X_OPERATOR_LIST
 #undef X
@@ -236,7 +229,7 @@ int get_precedence(ast_t *op)
 
 enum ACCOCIATIVITY get_assoc(ast_t *op)
 {
-    enum OPERATOR type = op->op.type;
+    enum OPERATOR type = get_op_type(op);
 #define X(NAME, PREC, ASSOC) if(type == OPERATOR_ ## NAME) return ASSOC;
     X_OPERATOR_LIST
 #undef X
@@ -286,7 +279,7 @@ ast_t *parse_expression(parse_state_t *ps)
     }
     ast_t *t0 = NULL, *t1, *t2;
 
-    // There may be nothing here if we are not parsing an expression.
+    // There may be nothing here if the parse failed.
     if(queue.size != 0)
     {
         t0 = queue_pop(&queue);
@@ -294,8 +287,8 @@ ast_t *parse_expression(parse_state_t *ps)
         {
             t1 = queue_pop(&queue);
             t2 = queue_pop(&queue);
-            t2->op.arg_0 = t0;
-            t2->op.arg_1 = t1;
+            t2->binary_op.arg_0 = t0;
+            t2->binary_op.arg_1 = t1;
             t0 = t2;
         }
     }
@@ -305,8 +298,8 @@ ast_t *parse_expression(parse_state_t *ps)
 ast_t *parse_return(parse_state_t *ps)
 {
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_KW_RETURN);
-    ast_t *out = ast_make(AST_TYPE_RETURN, ps);
-    out->return_.expr = PARSE(expression, ps);
+    ast_t *expr = PARSE(expression, ps);
+    ast_t *out  = ast_return(expr, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_SEMICOLON);
     return out;
 }
@@ -324,11 +317,7 @@ ast_t *parse_variable_declaration(parse_state_t *ps)
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_SEMICOLON);
 
     // Create the variable declaration node.
-    ast_t *out = ast_make(AST_TYPE_VAR_DECL, ps);
-    out->vardecl.type = type;
-    out->vardecl.name = name;
-    out->vardecl.expr = expr;
-    return out;
+    return ast_vardecl(type, name, expr, ps);
 }
 
 ast_t *parse_paren_expr(parse_state_t *ps)
@@ -366,11 +355,7 @@ ast_t *parse_if_common(parse_state_t *ps)
     }
 
     // Create the "if"/"else"/"elif" node.
-    ast_t *out = ast_make(AST_TYPE_IF, ps);
-    out->if_.cond    = cond;
-    out->if_.success = success;
-    out->if_.fail    = fail;
-    return out;
+    return ast_if(cond, success, fail, ps);
 }
 
 
@@ -388,9 +373,7 @@ ast_t *parse_while(parse_state_t *ps)
     ast_t *stmt = PARSE(braced_stmt_list, ps);
 
     // Create the "while" node
-    ast_t *out = ast_make(AST_TYPE_WHILE, ps);
-    out->while_.cond = cond;
-    out->while_.stmt = stmt;
+    return ast_while(cond, stmt, ps);
 }
 
 ast_t *parse_expression_statement(parse_state_t *ps)
@@ -470,12 +453,7 @@ ast_t *parse_function(parse_state_t *ps)
     ast_t *stmts = PARSE(braced_stmt_list, ps);
 
     // Create the function AST
-    ast_t *out = ast_make(AST_TYPE_FUNCTION, ps);
-    out->function.name       = name;
-    out->function.params     = params;
-    out->function.return_    = return_;
-    out->function.statements = stmts;
-    return out;
+    return ast_function(name, params, return_, stmts, ps);
 }
 
 ast_t *parse(token_list_t *tl, allocator_t *alloc)

@@ -12,6 +12,7 @@ int main(int argc, char **argv)
         fp = fopen(argv[1], "r");
     }
     const char *data = string_read_fp(fp);
+    fprintf(stderr, "%s", data);
     token_list_t *tl = tokenise(data);
 
 

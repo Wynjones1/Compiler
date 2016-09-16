@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <dlfcn.h>
 #include <string.h>
 #include <stdlib.h>
 #include "ast.h"
@@ -7,45 +6,12 @@
 #include "string_common.h"
 #include <errno.h>
 
-typedef ast_t *(*parse_function_t)(parse_state_t *);
-
-parse_function_t load_parse_function(const char *function_name)
+int main(void)
 {
-    void *handle = dlopen("libcompilerlib.so", RTLD_LAZY);
-    if(!handle)
-    {
-        fprintf(stderr, "Could not open libcompilerlib.so");
-        exit(-1);
-    }
-
-    parse_function_t func = dlsym(handle, function_name);
-    char *error;
-    if((error = dlerror()) != NULL)
-    {
-        fprintf(stderr, "Error opening function %s (%s)\n", function_name, error);
-        exit(-1);
-    }
-    return func;
-}
-
-int main(int argc, char **argv)
-{
-
-    if(argc < 3)
-    {
-        fprintf(stderr, "Must supply (function_name, filename)\n");
-        exit(-1);
-    }
-
-    const char *function_name = argv[1];
-    //const char *function_name = "parse_id";
-
-    parse_function_t func = load_parse_function(function_name);
-
-    FILE *fp = fopen(argv[2], "r");
+    FILE *fp = fopen(PARSE_FILE, "r");
     if(fp == NULL)
     {
-        fprintf(stderr, "Could not open file %s (%s).\n", argv[2], strerror(errno));
+        fprintf(stderr, "Could not open file %s (%s).\n", PARSE_FILE, strerror(errno));
         exit(-1);
     }
 
@@ -65,7 +31,7 @@ int main(int argc, char **argv)
     data[size] = '\0';
 
     printf("============================================================================\n");
-    printf("Testing function %s\n", function_name);
+    printf("Testing function %s\n", PARSE_FILE);
     printf("================================(Input Data)================================\n");
     printf("%s\n", data);
     printf("============================================================================\n");
@@ -76,7 +42,7 @@ int main(int argc, char **argv)
 
     allocator_t *allocator = allocator_init(1024);
     parse_state_t *ps = parse_state_init(token_list, allocator);
-    ast_t *out = func(ps);
+    ast_t *out = PARSE_FUNC(ps);
     if(out == NULL)
     {
         printf("Failed\n");

@@ -43,12 +43,18 @@ bool string_equal(const char *s0, const char *s1)
 
 const char *string_read_fp(FILE *fp)
 {
-    fseek(fp, 0, SEEK_END);
-    size_t size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    char *out = malloc(size + 1);
-    fread(out, size, 1, fp);
-    out[size] = '\0';
+    char buffer[1024];
+    size_t pos = 0;
+    char *out = malloc(1);
+    do
+    {
+        size_t count = fread(buffer, 1, sizeof(buffer), fp);
+        out = realloc(out, pos + count + 1);
+        memcpy(out + pos, buffer, count);
+        pos += count;
+    }while(!feof(fp));
+
+    out[pos] = '\0';
     return out;
 }
 

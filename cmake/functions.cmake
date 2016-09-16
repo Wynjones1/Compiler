@@ -1,0 +1,10 @@
+include(CheckCCompilerFlag)
+
+macro(add_c_flags_if_available)
+	foreach(ARG ${ARGN})
+		CHECK_C_COMPILER_FLAG(${ARG} HAVE_${ARG})
+		if(${HAVE_${ARG}})
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ARG}")
+		endif()
+	endforeach()
+endmacro()

@@ -68,7 +68,7 @@ ast_t *ast_vardecl(ast_t *type, ast_t *name, ast_t *expr, parse_state_t *ps)
 	return out;
 }
 
-ast_t *ast_binary_op(enum OPERATOR_TYPE type, parse_state_t *ps)
+ast_t *ast_binary_op(enum OPERATOR type, parse_state_t *ps)
 {
 	ast_t *out = ast_make(AST_TYPE_BINARY_OPERATION, ps);
     out->binary_op.type  = type;
@@ -77,7 +77,7 @@ ast_t *ast_binary_op(enum OPERATOR_TYPE type, parse_state_t *ps)
 	return out;
 }
 
-ast_t *ast_unary_op(enum OPERATOR_TYPE type, parse_state_t *ps)
+ast_t *ast_unary_op(enum OPERATOR type, parse_state_t *ps)
 {
 	ast_t *out = ast_make(AST_TYPE_UNARY_OPERATION, ps);
     out->unary_op.type = type;

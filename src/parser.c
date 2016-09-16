@@ -166,7 +166,7 @@ ast_t *parse_operation(parse_state_t *ps)
     }
     token_t *op = next_token(ps);
     // The actual tree nodes will be filled in later.
-    return ast_binary_op((enum OPERATOR_TYPE)op->type, ps);
+    return ast_binary_op((enum OPERATOR)op->type, ps);
 }
 
 struct sy_queue_stack
@@ -222,7 +222,7 @@ static enum OPERATOR get_op_type(ast_t *ast)
 int get_precedence(ast_t *op)
 {
     enum OPERATOR type = get_op_type(op);
-#define X(NAME, PREC, ASSOC) if(type == OPERATOR_ ## NAME) return PREC;
+#define X(NAME, PREC, NUM_ARGS, ASSOC) if(type == OPERATOR_ ## NAME) return PREC;
     X_OPERATOR_LIST
 #undef X
     exit(-1);
@@ -231,7 +231,7 @@ int get_precedence(ast_t *op)
 enum ACCOCIATIVITY get_assoc(ast_t *op)
 {
     enum OPERATOR type = get_op_type(op);
-#define X(NAME, PREC, ASSOC) if(type == OPERATOR_ ## NAME) return ASSOC;
+#define X(NAME, PREC, NUM_ARGS, ASSOC) if(type == OPERATOR_ ## NAME) return ASSOC;
     X_OPERATOR_LIST
 #undef X
     exit(-1);

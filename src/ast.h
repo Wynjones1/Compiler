@@ -116,8 +116,8 @@ ast_t *ast_function(ast_t *name, ast_t *params, ast_t *return_, ast_t *stmts, pa
 ast_t *ast_list(size_t count, ast_t **data, parse_state_t *ps);
 ast_t *ast_param(ast_t *type, ast_t *name, parse_state_t *ps);
 ast_t *ast_vardecl(ast_t *type, ast_t *name, ast_t *expr, parse_state_t *ps);
-ast_t *ast_binary_op(enum OPERATOR_TYPE type, parse_state_t *ps);
-ast_t *ast_unary_op(enum OPERATOR_TYPE type, parse_state_t *ps);
+ast_t *ast_binary_op(enum OPERATOR type, parse_state_t *ps);
+ast_t *ast_unary_op(enum OPERATOR type, parse_state_t *ps);
 ast_t *ast_return(ast_t *expr, parse_state_t *ps);
 ast_t *ast_if(ast_t *cond, ast_t *success, ast_t *fail, parse_state_t *ps);
 ast_t *ast_while(ast_t *cond, ast_t *stmts, parse_state_t *ps);

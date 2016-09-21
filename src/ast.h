@@ -9,6 +9,7 @@
     X(TYPE_DECL)        \
     X(PARAM)            \
     X(LIST)             \
+    X(STATEMENT_LIST)   \
     X(RETURN)           \
     X(ID)               \
     X(INT_LIT)          \

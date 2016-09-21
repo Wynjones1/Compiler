@@ -1,6 +1,6 @@
-function main()
+function main() -> int
 {
-    print(10);
+    return 123;
 }
 $
 123

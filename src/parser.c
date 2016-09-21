@@ -429,7 +429,9 @@ ast_t *parse_param_list(parse_state_t *ps)
 
 ast_t *parse_statement_list(parse_state_t *ps)
 {
-    return parse_list_generic(ps, parse_statement, TOKEN_TYPE_NONE);
+    ast_t *out = parse_list_generic(ps, parse_statement, TOKEN_TYPE_NONE);
+    out->type = AST_TYPE_STATEMENT_LIST;
+    return out;
 }
 
 

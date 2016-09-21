@@ -24,8 +24,14 @@ int main(int argc, char **argv)
     if(ast == NULL)
     {
         fprintf(stderr, "Parse Failed.\n");
+        exit(-1);
     }
-    eval(ast, al);
+
+    eval_state_t *es = eval_state_init(al);
+    eval(ast, es);
+
+    ast_t *entry_point = make_entry_node(al);
+    eval(entry_point, es);
     return 0;
 }
 

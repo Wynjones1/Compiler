@@ -14,8 +14,11 @@ parse_state_t *parse_state_init(token_list_t *tl, allocator_t *allocator)
 {
     parse_state_t *out = malloc(sizeof(parse_state_t));
     out->al    = allocator;
-    out->toks  = tl->tokens;
-    out->count = tl->size;
+    if(tl != NULL)
+    {
+        out->toks  = tl->tokens;
+        out->count = tl->size;
+    }
     out->pos   = 0;
     return out;
 }

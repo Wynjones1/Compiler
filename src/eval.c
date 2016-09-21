@@ -26,11 +26,11 @@ symbol_table_t *symtab_init(symbol_table_t *parent)
     return out;
 }
 
-typedef struct eval_state
+struct eval_state
 {
     symbol_table_t *table;
     allocator_t    *al;
-}eval_state_t;
+};
 
 ast_t *query_table(symbol_table_t *table, const char *symbol)
 {
@@ -56,6 +56,14 @@ eval_state_t *eval_state_init(allocator_t *al)
     return out;
 }
 
+void eval_state_add_scope(eval_state_t *state)
+{
+    
+}
+
+void table_add_entry(symbol_table_t *table, ast_t *key, ast_t *value)
+{}
+
 ast_t *eval_FUNCTION(ast_t *ast, eval_state_t *state)
 {}
 
@@ -72,10 +80,14 @@ ast_t *eval_RETURN(ast_t *ast, eval_state_t *state)
 {}
 
 ast_t *eval_ID(ast_t *ast, eval_state_t *state)
-{}
+{
+    return query_table(state->table, ast->string);
+}
 
 ast_t *eval_INT_LIT(ast_t *ast, eval_state_t *state)
-{}
+{
+    return ast;
+}
 
 ast_t *eval_VAR_DECL(ast_t *ast, eval_state_t *state)
 {}
@@ -94,26 +106,27 @@ ast_t *eval_UNARY_OPERATION(ast_t *ast, eval_state_t *state)
 
 ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
 {
-#if 0
-    ast_t *id = ast->func_call.id;
-    ast_t *func = query_table(state->table, id->id);
+    ast_t *id = ast->func_call.func;
+    ast_t *func = query_table(state->table, id->string);
     ast_t *func_params = func->function.params;
     ast_t *call_params = ast->func_call.params;
-    if(func_params->list.size != call_params->list.size)
+    if(func_params->list.count != call_params->list.count)
     {
         fprintf(stderr, "Mismatch in number of parameters.\n");
+        exit(-1);
     }
 
     eval_state_add_scope(state);
-    for(int i = 0; i < func_params->list.size; i++)
+    for(size_t i = 0; i < func_params->list.count; i++)
     {
-        ast_t *param = _eval(call_params->list.data[i], state);
-        table_add_entry(func_params->list.data[i], param);
+       ast_t *param = eval(call_params->list.data[i], state);
+       table_add_entry(state->table, func_params->list.data[i], param);
     }
-#endif
+
+    eval(ast->function.statements, state);
 }
 
-ast_t *eval_(ast_t *ast, eval_state_t *state)
+ast_t *eval(ast_t *ast, eval_state_t *state)
 {
 #define X(NAME)                           \
     if(ast->type == AST_TYPE_ ## NAME)    \
@@ -122,7 +135,7 @@ ast_t *eval_(ast_t *ast, eval_state_t *state)
     }
     X_AST_TYPE_LIST
 #undef X
-    fprintf(stderr, "Encounterd node with unknown type.\n");
+    fprintf(stderr, "Encountered node with unknown type.\n");
     exit(-1);
 }
 
@@ -132,12 +145,13 @@ ast_t *make_entry_node(allocator_t *alloc)
     return ast_func_call(ast_id("main", ps), ast_list(0, NULL, ps), ps);
 }
 
-ast_t *eval(ast_t *ast, allocator_t *al)
+void eval_string(const char *string)
 {
-    printf("Starting to evaluate.\n");
-    eval_state_t *state = eval_state_init(al);
-
-    ast_t *entry_point = make_entry_node(al);
-
-    return eval_(entry_point, state);
+    token_list_t *tl = tokenise(string);
+    allocator_t *alloc = allocator_init(1024);
+    ast_t *ast  = parse(tl, alloc);
+    ast_t *main_ast = make_entry_node(alloc);
+    eval_state_t *state = eval_state_init(alloc);
+    eval(ast, state);
+    eval(main_ast, state);
 }

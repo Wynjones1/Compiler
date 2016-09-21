@@ -4,19 +4,31 @@
 #include "string_common.h"
 #include "parser.h"
 #include <assert.h>
+#include <stdarg.h>
 
 typedef struct symbol_table symbol_table_t;
+
+#define TABLE_SIZE (100)
 
 struct symbol_table
 {
     struct
     {
-        const char *id;
-        ast_t      *node;
-    }data[100];
+        const char *key;
+        ast_t      *value;
+    }data[TABLE_SIZE];
     size_t size;
     symbol_table_t *parent;
 };
+
+void eval_error(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    exit(-1);
+}
 
 symbol_table_t *symtab_init(symbol_table_t *parent)
 {
@@ -38,14 +50,14 @@ ast_t *query_table(symbol_table_t *table, const char *symbol)
     {
         for(size_t i = 0; i < table->size; i++)
         {
-            if(string_equal(table->data[i].id, symbol))
+            if(string_equal(table->data[i].key, symbol))
             {
-                return table->data[i].node;
+                return table->data[i].value;
             }
         }
         table = table->parent;
     }
-    return NULL;
+    eval_error("Could not find symbol \"%s\" in table.\n", symbol);
 }
 
 eval_state_t *eval_state_init(allocator_t *al)
@@ -58,11 +70,16 @@ eval_state_t *eval_state_init(allocator_t *al)
 
 void eval_state_add_scope(eval_state_t *state)
 {
-    
+    state->table = symtab_init(state->table);
 }
 
-void table_add_entry(symbol_table_t *table, ast_t *key, ast_t *value)
-{}
+void table_add_entry(symbol_table_t *table, const char *key, ast_t *value)
+{
+    assert(table->size < TABLE_SIZE);
+    table->data[table->size].key   = key;
+    table->data[table->size].value = value;
+    table->size++;
+}
 
 ast_t *eval_FUNCTION(ast_t *ast, eval_state_t *state)
 {}
@@ -120,7 +137,7 @@ ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
     for(size_t i = 0; i < func_params->list.count; i++)
     {
        ast_t *param = eval(call_params->list.data[i], state);
-       table_add_entry(state->table, func_params->list.data[i], param);
+       table_add_entry(state->table, func_params->list.data[i]->param.name->string, param);
     }
 
     eval(ast->function.statements, state);

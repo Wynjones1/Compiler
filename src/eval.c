@@ -311,6 +311,8 @@ ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
 
     eval(func->function.statements, state);
     
+    state->returned = false;
+
     symtab_delete(state->table);
     state->table = table;
 

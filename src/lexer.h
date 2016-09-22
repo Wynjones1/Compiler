@@ -32,7 +32,7 @@
     X(TOKEN_TYPE_KW_IF,       "if")       \
     X(TOKEN_TYPE_KW_ELIF,     "elif")     \
     X(TOKEN_TYPE_KW_ELSE,     "else")     \
-    X(TOKEN_TYPE_KW_WHILE,    "while") 
+    X(TOKEN_TYPE_KW_WHILE,    "while")
 
 enum TOKEN_TYPE
 {

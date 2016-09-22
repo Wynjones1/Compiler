@@ -49,6 +49,8 @@ struct eval_state
     allocator_t    *al;
     bool            returned;
     ast_t          *return_;
+    const char     *stderr_;
+    const char     *stdout_;
 };
 
 uint32_t get_value(ast_t *ast)
@@ -82,6 +84,8 @@ eval_state_t *eval_state_init(allocator_t *al)
     out->al       = al;
     out->return_  = NULL;
     out->returned = false;
+    out->stdout_  = string_empty();
+    out->stderr_  = string_empty();
     return out;
 }
 
@@ -132,7 +136,9 @@ ast_t *eval_TYPE_DECL(ast_t *ast, eval_state_t *state)
 }
 
 ast_t *eval_PARAM(ast_t *ast, eval_state_t *state)
-{}
+{
+    return NULL;
+}
 
 ast_t *eval_LIST(ast_t *ast, eval_state_t *state)
 {
@@ -266,6 +272,18 @@ ast_t *eval_STATEMENT_LIST(ast_t *ast, eval_state_t *state)
     }
 }
 
+ast_t *eval_BUILTIN_FUNC_CALL(ast_t *ast, eval_state_t *state)
+{
+    if (strcmp(ast->func_call.func->string, "print") == 0)
+    {
+        ast_t *value = eval(ast->func_call.params->list.data[0], state);
+        assert(value->type == AST_TYPE_INT_LIT);
+        printf("%s\n", value->string);
+        state->stdout_ = string_append(state->stdout_, value->string);
+        state->stdout_ = string_append(state->stdout_, "\n");
+    }
+}
+
 ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
 {
     ast_t *id = ast->func_call.func;
@@ -320,19 +338,26 @@ ast_t *make_entry_node(allocator_t *alloc)
     return ast_func_call(func_name, param_list, ps);
 }
 
-const char *eval_string(const char *string)
+eval_result_t *eval_string(const char *string)
 {
     token_list_t *tl = tokenise(string);
     allocator_t *alloc = allocator_init(1024);
     ast_t *ast  = parse(tl, alloc);
     ast_t *main_ast = make_entry_node(alloc);
+
     eval_state_t *state = eval_state_init(alloc);
     eval(ast, state);
 
-    ast_t *out = eval(main_ast, state);
-    assert(out->type == AST_TYPE_INT_LIT);
-    const char *return_string = string_copy(out->string, NULL);
+    ast_t *main_eval = eval(main_ast, state);
+    assert(main_eval->type == AST_TYPE_INT_LIT);
+
+    eval_result_t *out = malloc(sizeof(eval_result_t));
+    out->retcode = (uint32_t) atoll(main_eval->string);
+    out->stdout_ = string_copy(state->stdout_, NULL);
+    out->stderr_ = string_copy(state->stderr_, NULL);
+
     eval_state_delete(state);
     allocator_delete(alloc);
-    return return_string;
+    
+    return out;
 }

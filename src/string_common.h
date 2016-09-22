@@ -49,4 +49,23 @@ void        string_delete(const char *str);
 /* Returns true if the two strings are equal, false otherwise */
 bool string_equal(const char *s0, const char *s1);
 
+/* Concatonate two strings.
+    Parameters:
+        str0 - zero terminated string to be concatonated to
+        str1 - zero terminated string to concatonate to str0
+
+    After this call str0 is not guaranteed to point to valid memory.
+
+    Return:
+        new zero terminated string (allocated) that is the
+*/
+const char *string_append(const char *str0, const char *str1);
+
+/* Create an empty string.
+
+    Return:
+        zero terminated empty string.
+*/
+const char *string_empty(void);
+
 #endif

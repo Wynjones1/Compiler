@@ -126,7 +126,6 @@ ast_t *parse_integer_literal(parse_state_t *ps)
     return ast_int_literal(tok->value, ps);
 }
 
-
 ast_t *parse_expression_list(parse_state_t *ps)
 {
     list_t *list = list_init(sizeof(ast_t*));

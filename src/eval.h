@@ -5,10 +5,17 @@
 
 typedef struct eval_state eval_state_t;
 
+typedef struct eval_result
+{
+    const char *stderr_;
+    const char *stdout_;
+    uint32_t    retcode;
+}eval_result_t;
+
 eval_state_t *eval_state_init(allocator_t *al);
 ast_t        *eval(ast_t *ast, eval_state_t *al);
 ast_t        *make_entry_node(allocator_t *alloc);
 
-const char *eval_string(const char *string);
+eval_result_t *eval_string(const char *string);
 
 #endif

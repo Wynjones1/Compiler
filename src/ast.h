@@ -4,21 +4,25 @@
 #include "lexer.h"
 #include "operators.h"
 
-#define X_AST_TYPE_LIST \
-    X(FUNCTION)         \
-    X(TYPE_DECL)        \
-    X(PARAM)            \
-    X(LIST)             \
-    X(STATEMENT_LIST)   \
-    X(RETURN)           \
-    X(ID)               \
-    X(INT_LIT)          \
-    X(VAR_DECL)         \
-    X(WHILE)            \
-    X(IF)               \
-    X(BINARY_OPERATION) \
-    X(UNARY_OPERATION)  \
+#define X_AST_TYPE_LIST  \
+    X(FUNCTION)          \
+    X(TYPE_DECL)         \
+    X(PARAM)             \
+    X(LIST)              \
+    X(STATEMENT_LIST)    \
+    X(RETURN)            \
+    X(ID)                \
+    X(INT_LIT)           \
+    X(VAR_DECL)          \
+    X(WHILE)             \
+    X(IF)                \
+    X(BINARY_OPERATION)  \
+    X(UNARY_OPERATION)   \
+    X(BUILTIN_FUNC_CALL) \
     X(FUNC_CALL)
+
+#define X_BUILTIN_FUNC_LIST \
+    X("print")
 
 enum AST_TYPE
 {

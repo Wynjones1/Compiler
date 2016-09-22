@@ -63,3 +63,18 @@ const char *string_read_file(const char *filename)
     FILE *fp = fopen(filename, "r");
     return string_read_fp(fp);
 }
+
+const char *string_append(const char *str0, const char *str1)
+{
+    size_t s0 = strlen(str0);
+    size_t s1 = strlen(str1);
+    char *out = realloc(str0, s0 + s1 + 1);
+    memcpy(out + s0, str1, s1);
+    out[s0 + s1] = '\0';
+    return out;
+}
+
+const char *string_empty(void)
+{
+    return calloc(1, 1);
+}

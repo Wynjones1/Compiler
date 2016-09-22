@@ -117,6 +117,15 @@ ast_t *ast_func_call(ast_t *func, ast_t *params, parse_state_t *ps)
 	ast_t *out = ast_make(AST_TYPE_FUNC_CALL, ps);
     out->func_call.func = func;
     out->func_call.params = params;
+
+    if(out->func_call.func->type == AST_TYPE_ID)
+    {
+    #define X(STRING)\
+        if(strcmp(out->func_call.func->string, STRING) == 0)\
+            out->type = AST_TYPE_BUILTIN_FUNC_CALL;
+        X_BUILTIN_FUNC_LIST
+    #undef X
+    }
 	return out;
 }
 

@@ -20,12 +20,12 @@ const char *string_copy_n(const char *str, size_t n, allocator_t *al)
     if(al == NULL)
     {
         out = malloc(len + 1);
+        //TODO: error checking for malloc
     }
     else
     {
-        out = allocator_new(al, n + 1);
+        out = allocator_new(al, len + 1);
     }
-    //TODO: error checking for malloc
     memcpy(out, str, len);
     out[len] = '\0';
     return out;

@@ -27,11 +27,13 @@ int main(int argc, char **argv)
 
     char *input_data = data;
     char *output_data = NULL;
-    for(size_t i = 1; i < size; i++)
+    for(size_t i = 2; i < size; i++)
     {
-        if(input_data[i - 1] == '\n' && input_data[i] == '$')
+        if(    input_data[i - 2] == '\n'
+            && input_data[i - 1] == '$'
+            && input_data[i - 0] == '\n')
         {
-            input_data[i] = '\0';
+            input_data[i - 1] = '\0';
             output_data  = input_data + i + 1;
         }
     }
@@ -50,9 +52,18 @@ int main(int argc, char **argv)
     printf("%s\n", input_data);
     printf("==============================(Expected Output)=============================\n");
     printf("%s\n", output_data);
+
+    const char *result = eval_string(input_data);
+    if (strcmp(result, output_data) != 0)
+    {
+        printf("================================(Test Failed)===============================\n");
+        printf("Result %s\n", result);
+        printf("============================================================================\n");
+        return 1;
+    }
+
+    printf("================================(Test Passed)===============================\n");
+    printf("Result %s\n", result);
     printf("============================================================================\n");
-
-    eval_string(input_data);
-
     return 0;
 }

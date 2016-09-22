@@ -45,6 +45,7 @@ void symtab_delete(symbol_table_t *table)
 struct eval_state
 {
     symbol_table_t *table;
+    symbol_table_t *globals;
     allocator_t    *al;
     bool            returned;
     ast_t          *return_;
@@ -56,8 +57,9 @@ uint32_t get_value(ast_t *ast)
     return (uint32_t)atoll(ast->string);
 }
 
-ast_t *query_table(symbol_table_t *table, const char *symbol)
+ast_t *query_table(symbol_table_t *table_, const char *symbol)
 {
+    symbol_table_t *table = table_;
     while(table != NULL)
     {
         for(size_t i = 0; i < table->size; i++)
@@ -76,11 +78,15 @@ eval_state_t *eval_state_init(allocator_t *al)
 {
     eval_state_t *out = malloc(sizeof(eval_state_t));
     out->table    = symtab_init(NULL);
+    out->globals  = out->table;
     out->al       = al;
     out->return_  = NULL;
     out->returned = false;
     return out;
 }
+
+void eval_state_delete(eval_state_t *eval_state)
+{}
 
 void eval_state_add_scope(eval_state_t *state)
 {
@@ -175,7 +181,7 @@ ast_t *eval_IF(ast_t *ast, eval_state_t *state)
     {
         eval(ast->if_.success, state);
     }
-    else
+    else if(ast->if_.fail)
     {
         eval(ast->if_.fail, state);
     }
@@ -250,9 +256,9 @@ ast_t *eval_UNARY_OPERATION(ast_t *ast, eval_state_t *state)
 
 ast_t *eval_STATEMENT_LIST(ast_t *ast, eval_state_t *state)
 {
-    for(size_t i = 0; i < ast->function.statements->list.count; i++)
+    for(size_t i = 0; i < ast->list.count; i++)
     {
-        eval(ast->function.statements->list.data[i], state);
+        eval(ast->list.data[i], state);
         if(state->returned)
         {
             break;
@@ -272,21 +278,21 @@ ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
         exit(-1);
     }
 
-    symbol_table_t *table = state->table;
-    state->table = symtab_init(NULL);
+    symbol_table_t *table      = state->table;
+    symbol_table_t *func_table = symtab_init(state->globals);
     for(size_t i = 0; i < func_params->list.count; i++)
     {
-       ast_t *param = eval(call_params->list.data[i], state);
-       table_add_entry(state->table, func_params->list.data[i]->param.name->string, param);
+       const char *symbol = func_params->list.data[i]->param.name->string;
+       ast_t      *param  = eval(call_params->list.data[i], state);
+       table_add_entry(func_table, symbol, param);
     }
 
-    eval(ast->function.statements, state);
-
+    state->table = func_table;
     state->return_  = NULL;
     state->returned = false;
 
-    eval(ast->function.statements, state);
-
+    eval(func->function.statements, state);
+    
     symtab_delete(state->table);
     state->table = table;
 
@@ -309,10 +315,12 @@ ast_t *eval(ast_t *ast, eval_state_t *state)
 ast_t *make_entry_node(allocator_t *alloc)
 {
     parse_state_t *ps = parse_state_init(NULL, alloc);
-    return ast_func_call(ast_id("main", ps), ast_list(0, NULL, ps), ps);
+    ast_t *func_name = ast_id("main", ps);
+    ast_t *param_list = ast_list(0, NULL, ps);
+    return ast_func_call(func_name, param_list, ps);
 }
 
-void eval_string(const char *string)
+const char *eval_string(const char *string)
 {
     token_list_t *tl = tokenise(string);
     allocator_t *alloc = allocator_init(1024);
@@ -320,5 +328,11 @@ void eval_string(const char *string)
     ast_t *main_ast = make_entry_node(alloc);
     eval_state_t *state = eval_state_init(alloc);
     eval(ast, state);
-    eval(main_ast, state);
+
+    ast_t *out = eval(main_ast, state);
+    assert(out->type == AST_TYPE_INT_LIT);
+    const char *return_string = string_copy(out->string, NULL);
+    eval_state_delete(state);
+    allocator_delete(alloc);
+    return return_string;
 }

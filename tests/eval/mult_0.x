@@ -1,6 +1,6 @@
 function main() -> int
 {
-    return 123;
+    return 2 * 2;
 }
 $
-123
+4

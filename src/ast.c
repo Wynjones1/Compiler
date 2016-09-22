@@ -38,6 +38,9 @@ ast_t *ast_function(ast_t *name, ast_t *params, ast_t *return_, ast_t *stmts, pa
 {
 	ast_t *out = ast_make(AST_TYPE_FUNCTION, ps);
     out->function.name = name;
+    out->function.params = params;
+    out->function.return_ = return_;
+    out->function.statements = stmts;
 	return out;
 }
 
@@ -55,7 +58,7 @@ ast_t *ast_param(ast_t *type, ast_t *name, parse_state_t *ps)
 {
 	ast_t *out = ast_make(AST_TYPE_PARAM, ps);
     out->param.type = type;
-    out->param.type = name;
+    out->param.name = name;
 	return out;
 }
 

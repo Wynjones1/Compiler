@@ -69,7 +69,6 @@ static token_t *accept(parse_state_t *ps, enum TOKEN_TYPE type)
 
 ast_t *parse_(ast_t*(*func)(parse_state_t*), parse_state_t *ps)
 {
-
     parse_state_t ps_new = *ps;
     ast_t *out = func(&ps_new);
     allocator_push(ps->al);
@@ -260,14 +259,12 @@ ast_t *parse_expression(parse_state_t *ps)
         {
             // while operators on the operator stack.
             ast_t *o2;
-            while( (o2 = stack_top(&stack)) )
+            while(    (o2 = stack_top(&stack))
+                  &&  (   (get_assoc(o1) == LEFT     &&    get_precedence(o1) >= get_precedence(o2))
+                       || (/* get_assoc(o2) == RIGHT && */ get_precedence(o1) >  get_precedence(o2))))
             {
-                if(   (   get_assoc(o1) == LEFT  &&    get_precedence(o1) >= get_precedence(o2))
-                   || (/* get_assoc(o2) == RIGHT && */ get_precedence(o1) >  get_precedence(o2)))
-                {
-                    queue_push(&queue, o2);
-                    stack_pop(&stack);
-                }
+                queue_push(&queue, o2);
+                stack_pop(&stack);
             }
 
             // push o1 to the stack.
@@ -281,22 +278,34 @@ ast_t *parse_expression(parse_state_t *ps)
     {
         queue_push(&queue, stack_pop(&stack));
     }
-    ast_t *t0 = NULL, *t1, *t2;
 
     // There may be nothing here if the parse failed.
-    if(queue.size != 0)
+    if(queue.size == 0)
+    {
+        return NULL;
+    }
+
+    ast_t *t0;
+    while(queue.size)
     {
         t0 = queue_pop(&queue);
-        while(queue.size)
+        if(t0->type == AST_TYPE_BINARY_OPERATION)
         {
-            t1 = queue_pop(&queue);
-            t2 = queue_pop(&queue);
-            t2->binary_op.arg_0 = t0;
-            t2->binary_op.arg_1 = t1;
-            t0 = t2;
+            ast_t *rhs = stack_pop(&stack);
+            ast_t *lhs = stack_pop(&stack);
+            t0->binary_op.arg_0 = lhs;
+            t0->binary_op.arg_1 = rhs;
         }
+        else if(t0->type == AST_TYPE_UNARY_OPERATION)
+        {
+            ast_t *arg = stack_pop(&stack);
+            t0->unary_op.arg = arg;
+            stack_push(&stack, t0);
+        }
+        stack_push(&stack, t0);
     }
-    return t0;
+    assert(stack.size == 1);
+    return stack.elems[0];
 }
 
 ast_t *parse_return(parse_state_t *ps)

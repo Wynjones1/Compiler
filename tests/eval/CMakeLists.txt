@@ -8,8 +8,9 @@ include_directories(
 
 foreach(TEST ${TESTS})
     set(TARGET_NAME test_eval_${TEST})
-    add_executable(${TARGET_NAME} main.c)
     set(INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${TEST})
+    add_executable(${TARGET_NAME} main.c ${INPUT_FILE})
+	set_source_files_properties(${INPUT_FILE} PROPERTIES HEADER_FILE_ONLY True)
     target_compile_definitions(${TARGET_NAME} PUBLIC -DINPUT_FILE="${INPUT_FILE}")
     target_link_libraries(${TARGET_NAME} compilerlib)
     set_property(TARGET ${TARGET_NAME} PROPERTY FOLDER "Test/Eval")

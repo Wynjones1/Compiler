@@ -10,6 +10,38 @@
 
 #define DEBUG_PARSER (1)
 
+#define PARSE(func, ps) parse_(parse_ ## func, ps);
+
+#define ACCEPT_OR_FAIL(ps, type)         \
+    do                                   \
+    {                                    \
+        token_t *_x = accept(ps, type);  \
+        if(_x == NULL)                   \
+        {                                \
+            return NULL;                 \
+        }                                \
+    }while(0);
+
+#define ACCEPT_OR_FAIL_VAR(var, ps, type) \
+    do                                    \
+    {                                     \
+        token_t *_x = accept(ps, type);   \
+        if(_x == NULL)                    \
+        {                                 \
+            return NULL;                  \
+        }                                 \
+        var = _x;                         \
+    }while(0);
+
+#define IF_PARSE_RETURN(func, ps)      \
+    do{                                \
+        ast_t *_out = PARSE(func, ps); \
+        if(_out)                       \
+        {                              \
+            return _out;               \
+        }                              \
+    } while(0);
+
 parse_state_t *parse_state_init(token_list_t *tl, allocator_t *allocator)
 {
     parse_state_t *out = malloc(sizeof(parse_state_t));
@@ -46,26 +78,6 @@ static token_t *accept(parse_state_t *ps, enum TOKEN_TYPE type)
     return NULL;
 }
 
-#define ACCEPT_OR_FAIL(ps, type)         \
-    do                                   \
-    {                                    \
-        token_t *_x = accept(ps, type);  \
-        if(_x == NULL)                   \
-        {                                \
-            return NULL;                 \
-        }                                \
-    }while(0);
-
-#define ACCEPT_OR_FAIL_VAR(var, ps, type)\
-    do                                   \
-    {                                    \
-        token_t *_x = accept(ps, type);  \
-        if(_x == NULL)                   \
-        {                                \
-            return NULL;                 \
-        }                                \
-        var = _x;                        \
-    }while(0);
 
 ast_t *parse_(ast_t*(*func)(parse_state_t*), parse_state_t *ps)
 {
@@ -84,23 +96,23 @@ ast_t *parse_(ast_t*(*func)(parse_state_t*), parse_state_t *ps)
     return out;
 }
 
-#define PARSE(func, ps) parse_(parse_ ## func, ps);
-
-#define IF_PARSE_RETURN(func, ps)      \
-    do{                                \
-        ast_t *_out = PARSE(func, ps); \
-        if(_out)                       \
-        {                              \
-            return _out;               \
-        }                              \
-    } while(0);
+ast_t *parse_array_qualifier(parse_state_t *ps)
+{
+    ACCEPT_OR_FAIL(ps, TOKEN_TYPE_LSQUARE);
+    ast_t *type = PARSE(type, ps);
+    if(type == NULL) return NULL;
+    ACCEPT_OR_FAIL(ps, TOKEN_TYPE_COMMA);
+    ast_t *size = PARSE(integer_literal, ps);
+    if(size == NULL) return NULL;
+    ACCEPT_OR_FAIL(ps, TOKEN_TYPE_RSQUARE);
+    return ast_array_qualifier(type, size, ps);
+}
 
 ast_t *parse_type(parse_state_t *ps)
 {
-    ast_t *id = PARSE(id, ps);
-    typedecl_t *td = allocator_new(ps->al, sizeof(typedecl_t));
-    td->id = id;
-    return ast_decl(td, ps);
+    IF_PARSE_RETURN(array_qualifier, ps);
+    IF_PARSE_RETURN(id, ps);
+    return NULL;
 }
 
 ast_t *parse_param(parse_state_t *ps)
@@ -351,7 +363,6 @@ ast_t *parse_braced_stmt_list(parse_state_t *ps)
     return out;
 }
 
-
 ast_t *parse_if_common(parse_state_t *ps)
 {
     ast_t *cond    = PARSE(paren_expr, ps);
@@ -369,7 +380,6 @@ ast_t *parse_if_common(parse_state_t *ps)
     // Create the "if"/"else"/"elif" node.
     return ast_if(cond, success, fail, ps);
 }
-
 
 ast_t *parse_if(parse_state_t *ps)
 {
@@ -428,12 +438,10 @@ ast_t *parse_list_generic(
     return out_list;
 }
 
-
 ast_t *parse_param_list(parse_state_t *ps)
 {
     return parse_list_generic(ps, parse_param, TOKEN_TYPE_COMMA);
 }
-
 
 ast_t *parse_statement_list(parse_state_t *ps)
 {
@@ -441,7 +449,6 @@ ast_t *parse_statement_list(parse_state_t *ps)
     out->type = AST_TYPE_STATEMENT_LIST;
     return out;
 }
-
 
 ast_t *parse_function(parse_state_t *ps)
 {

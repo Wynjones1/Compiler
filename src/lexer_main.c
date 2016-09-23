@@ -15,6 +15,6 @@ int main(int argc, char **argv)
     const char *data = string_read_fp(fp);
 
     token_list_t *tl = tokenise(data);
-    printf("Found %lu tokens\n", tl->size);
+    printf("Found %d tokens\n", (int)tl->size);
     return 0;
 }

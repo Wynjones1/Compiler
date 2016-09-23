@@ -9,6 +9,7 @@ set(SRC
     parser.c
     string_common.c
     list.c
+	sema.c
 )
 
 file(GLOB HDR *.h)
@@ -16,7 +17,7 @@ file(GLOB HDR *.h)
 add_c_flags_if_available(-Wall -Wextra -Werror)
 add_c_flags_if_available(-Wno-return-type -Wno-unused-parameter -Wno-unused-variable)
 
-add_c_flags_if_available(/wd4715 /wd4716)
+add_c_flags_if_available(/wd4715 /wd4716 /wd4201 /wd4710 /wd4820 /wd4100)
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)

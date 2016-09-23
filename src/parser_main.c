@@ -15,7 +15,6 @@ int main(int argc, char **argv)
     fprintf(stderr, "%s", data);
     token_list_t *tl = tokenise(data);
 
-
     allocator_t *alloc = allocator_init(1024);
     ast_t *d = parse(tl, alloc);
     return 0;

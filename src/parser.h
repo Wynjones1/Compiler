@@ -46,5 +46,6 @@ ast_t *parse_sub_expression(parse_state_t *ps);
 ast_t *parse_sub_expression(parse_state_t *ps);
 ast_t *parse_variable_declaration(parse_state_t *ps);
 ast_t *parse_while(parse_state_t *ps);
+ast_t *parse_type(parse_state_t *ps);
 
 #endif

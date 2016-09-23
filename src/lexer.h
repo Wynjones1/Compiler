@@ -8,6 +8,8 @@
     X(TOKEN_TYPE_RPAREN,    ")" ) \
     X(TOKEN_TYPE_LBRACE,    "{" ) \
     X(TOKEN_TYPE_RBRACE,    "}" ) \
+    X(TOKEN_TYPE_LSQUARE,   "[" ) \
+    X(TOKEN_TYPE_RSQUARE,   "]" ) \
     X(TOKEN_TYPE_COLON,     ":" ) \
     X(TOKEN_TYPE_SEMICOLON, ";" ) \
     X(TOKEN_TYPE_COMMA    , "," ) \
@@ -48,7 +50,6 @@ enum TOKEN_TYPE
     TOKEN_TYPE_WHITESPACE,
     NUM_TOKENS,
 };
-
 
 typedef struct token
 {

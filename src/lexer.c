@@ -155,6 +155,9 @@ token_list_t *tokenise(const char *data_)
     enum TOKEN_TYPE type;
     token_list_t *list = token_list_make();
 
+    size_t column = 1;
+    size_t line   = 1;
+
     while(data[0] != '\0')
     {
         if(    accept_identifier(data, &size, &type)

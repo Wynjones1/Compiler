@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 #include <stddef.h>
+#include <stdbool.h>
 #include "lexer.h"
 #include "operators.h"
 
@@ -19,7 +20,8 @@
     X(BINARY_OPERATION)  \
     X(UNARY_OPERATION)   \
     X(BUILTIN_FUNC_CALL) \
-    X(FUNC_CALL)
+    X(FUNC_CALL)         \
+    X(QUALIFIER_ARRAY)
 
 #define X_BUILTIN_FUNC_LIST \
     X("print")
@@ -32,15 +34,8 @@ enum AST_TYPE
     NUM_AST_TYPES,
 };
 
-
 typedef struct ast ast_t;
-typedef struct typedecl typedecl_t;
 typedef struct parse_state parse_state_t;
-
-struct typedecl
-{
-    ast_t *id;
-};
 
 struct ast
 {
@@ -72,7 +67,7 @@ struct ast
             ast_t *type;
             ast_t *name;
             ast_t *expr;
-        }vardecl;
+        }var_decl;
 
         struct
         {
@@ -110,8 +105,12 @@ struct ast
             ast_t *func;
             ast_t *params;
         }func_call;
-
-        typedecl_t *decl;
+        
+        struct
+        {
+            ast_t *array_size;
+            ast_t *next;
+        }type_decl;
 
         const char *string;
     };
@@ -127,9 +126,9 @@ ast_t *ast_return(ast_t *expr, parse_state_t *ps);
 ast_t *ast_if(ast_t *cond, ast_t *success, ast_t *fail, parse_state_t *ps);
 ast_t *ast_while(ast_t *cond, ast_t *stmts, parse_state_t *ps);
 ast_t *ast_func_call(ast_t *func, ast_t *params, parse_state_t *ps);
-ast_t *ast_decl(typedecl_t *type, parse_state_t *ps);
 ast_t *ast_int_literal(const char *value, parse_state_t *ps);
 ast_t *ast_id(const char *value, parse_state_t *ps);
+ast_t *ast_array_qualifier(ast_t *type, ast_t *size, parse_state_t *ps);
 
 /* Return a string corresponding to the AST type.
    Parameters:

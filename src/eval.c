@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "string_common.h"
+#include "helpers.h"
 #include "parser.h"
 #include <assert.h>
 #include <stdarg.h>
@@ -47,10 +48,10 @@ struct eval_state
     symbol_table_t *table;
     symbol_table_t *globals;
     allocator_t    *al;
-    bool            returned;
     ast_t          *return_;
     const char     *stderr_;
     const char     *stdout_;
+    bool            returned;
 };
 
 uint32_t get_value(ast_t *ast)
@@ -127,12 +128,14 @@ ast_t *eval_FUNCTION(ast_t *ast, eval_state_t *state)
     table_add_entry(state->table, ast->function.name->string, ast);
 }
 
+ast_t *eval_QUALIFIER_ARRAY(ast_t *ast, eval_state_t *state)
+{
+    NOT_IMPLEMENTED();
+}
+
 ast_t *eval_TYPE_DECL(ast_t *ast, eval_state_t *state)
 {
-    if(strcmp(ast->decl->id->string, "int") != 0)
-    {
-        eval_error("Only int is supported currently\n");
-    }
+    NOT_IMPLEMENTED();
 }
 
 ast_t *eval_PARAM(ast_t *ast, eval_state_t *state)
@@ -166,8 +169,8 @@ ast_t *eval_INT_LIT(ast_t *ast, eval_state_t *state)
 
 ast_t *eval_VAR_DECL(ast_t *ast, eval_state_t *state)
 {
-    ast_t *value = ast->vardecl.expr ? eval(ast->vardecl.expr, state) : NULL;
-    table_add_entry(state->table, ast->vardecl.name->string, value);
+    ast_t *value = ast->var_decl.expr ? eval(ast->var_decl.expr, state) : NULL;
+    table_add_entry(state->table, ast->var_decl.name->string, value);
 }
 
 ast_t *eval_WHILE(ast_t *ast, eval_state_t *state)
@@ -351,6 +354,7 @@ eval_result_t *eval_string(const char *string)
     eval(ast, state);
 
     ast_t *main_eval = eval(main_ast, state);
+    assert(main_eval != NULL);
     assert(main_eval->type == AST_TYPE_INT_LIT);
 
     eval_result_t *out = malloc(sizeof(eval_result_t));

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-
+project(compiler)
 include(cmake/setup.cmake)
 include(cmake/functions.cmake)
 

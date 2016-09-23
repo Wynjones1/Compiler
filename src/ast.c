@@ -65,9 +65,9 @@ ast_t *ast_param(ast_t *type, ast_t *name, parse_state_t *ps)
 ast_t *ast_vardecl(ast_t *type, ast_t *name, ast_t *expr, parse_state_t *ps)
 {
 	ast_t *out = ast_make(AST_TYPE_VAR_DECL, ps);
-    out->vardecl.type = type;
-    out->vardecl.name = name;
-    out->vardecl.expr = expr;
+    out->var_decl.type = type;
+    out->var_decl.name = name;
+    out->var_decl.expr = expr;
 	return out;
 }
 
@@ -129,13 +129,6 @@ ast_t *ast_func_call(ast_t *func, ast_t *params, parse_state_t *ps)
 	return out;
 }
 
-ast_t *ast_decl(typedecl_t *decl, parse_state_t *ps)
-{
-	ast_t *out = ast_make(AST_TYPE_TYPE_DECL, ps);
-    out->decl = decl;
-	return out;
-}
-
 ast_t *ast_int_literal(const char *value, parse_state_t *ps)
 {
     ast_t *out = ast_make(AST_TYPE_INT_LIT, ps);
@@ -147,5 +140,13 @@ ast_t *ast_id(const char *value, parse_state_t *ps)
 {
     ast_t *out = ast_make(AST_TYPE_ID, ps);
     out->string = string_copy(value, ps->al);
+    return out;
+}
+
+ast_t *ast_array_qualifier(ast_t *type, ast_t *size, parse_state_t *ps)
+{
+    ast_t *out = ast_make(AST_TYPE_QUALIFIER_ARRAY, ps);
+    out->type_decl.next = type;
+    out->type_decl.array_size = size;
     return out;
 }

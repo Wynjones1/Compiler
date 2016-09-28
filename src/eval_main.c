@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "string_common.h"
+#include "helpers.h"
 
 int main(int argc, char **argv)
 {
@@ -23,8 +24,7 @@ int main(int argc, char **argv)
     ast_t *ast = parse(tl, al);
     if(ast == NULL)
     {
-        fprintf(stderr, "Parse Failed.\n");
-        exit(-1);
+        TODO_ERROR_HANDLING("Parse Failed.\n");
     }
 
     eval_state_t *es = eval_state_init(al);

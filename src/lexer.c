@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include "helpers.h"
 
 void token_init(token_t *token, enum TOKEN_TYPE type, const char *value, size_t size)
 {
@@ -173,8 +174,7 @@ token_list_t *tokenise(const char *data_)
         }
         else
         {
-            fprintf(stderr, "Unrecognised character (%c)\n", data[0]);
-            exit(-1);
+            TODO_ERROR_HANDLING("Unrecognised character (%c)\n", data[0]);
         }
     }
     token_list_append(list, NULL, TOKEN_TYPE_NONE, 0);

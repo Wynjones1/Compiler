@@ -295,8 +295,7 @@ ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
     ast_t *call_params = ast->func_call.params;
     if(func_params->list.count != call_params->list.count)
     {
-        fprintf(stderr, "Mismatch in number of parameters.\n");
-        exit(-1);
+        TODO_ERROR_HANDLING("Mismatch in number of parameters.\n");
     }
 
     symbol_table_t *table      = state->table;
@@ -331,8 +330,7 @@ ast_t *eval(ast_t *ast, eval_state_t *state)
     }
     X_AST_TYPE_LIST
 #undef X
-    fprintf(stderr, "Encountered node with unknown type.\n");
-    exit(-1);
+    TODO_ERROR_HANDLING("Encountered node with unknown type.\n");
 }
 
 ast_t *make_entry_node(allocator_t *alloc)

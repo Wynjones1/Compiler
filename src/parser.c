@@ -7,6 +7,7 @@
 #include "list.h"
 #include "parser.h"
 #include "string_common.h"
+#include "helpers.h"
 
 #define DEBUG_PARSER (1)
 
@@ -490,8 +491,7 @@ ast_t *parse(token_list_t *tl, allocator_t *alloc)
         list_push(functions, &function);
         if(ps->pos == start_pos)
         {
-            fprintf(stderr, "Parse failed: No progress made.\n");
-            exit(-1);
+            TODO_ERROR_HANDLING("Parse failed: No progress made.\n");
         }
     }
     ast_t *out = ast_list(list_count(functions), list_data(functions), ps);

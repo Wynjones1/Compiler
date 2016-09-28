@@ -10,6 +10,7 @@ set(SRC
     string_common.c
     list.c
 	sema.c
+    symbol_table.c
 )
 
 file(GLOB HDR *.h)
@@ -36,5 +37,8 @@ target_link_libraries(parser compilerlib)
 
 add_executable(eval eval_main.c)
 target_link_libraries(eval compilerlib)
+
+add_executable(sema sema_main.c)
+target_link_libraries(sema compilerlib)
 
 #add_subdirectory(python)

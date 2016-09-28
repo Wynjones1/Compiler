@@ -145,6 +145,10 @@ ast_t *parse_expression_list(parse_state_t *ps)
     do
     {
         ast_t *expr = PARSE(expression, ps);
+        if (expr == NULL)
+        {
+            break;
+        }
         list_push(list, &expr);
     }
     while(accept(ps, TOKEN_TYPE_COMMA));
@@ -359,9 +363,9 @@ ast_t *parse_paren_expr(parse_state_t *ps)
 ast_t *parse_braced_stmt_list(parse_state_t *ps)
 {
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_LBRACE);
-    ast_t *out = PARSE(statement_list, ps);
+    ast_t *child = PARSE(statement_list, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_RBRACE);
-    return out;
+    return ast_scope(child, ps);
 }
 
 ast_t *parse_if_common(parse_state_t *ps)

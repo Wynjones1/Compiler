@@ -21,7 +21,8 @@
     X(UNARY_OPERATION)   \
     X(BUILTIN_FUNC_CALL) \
     X(FUNC_CALL)         \
-    X(QUALIFIER_ARRAY)
+    X(QUALIFIER_ARRAY)   \
+    X(SCOPE)             \
 
 #define X_BUILTIN_FUNC_LIST \
     X("print")
@@ -36,6 +37,7 @@ enum AST_TYPE
 
 typedef struct ast ast_t;
 typedef struct parse_state parse_state_t;
+typedef struct symbol_table symbol_table_t;
 
 struct ast
 {
@@ -112,6 +114,12 @@ struct ast
             ast_t *next;
         }type_decl;
 
+        struct
+        {
+            symbol_table_t *table;
+            ast_t          *child;
+        }scope;
+
         const char *string;
     };
 };
@@ -129,6 +137,7 @@ ast_t *ast_func_call(ast_t *func, ast_t *params, parse_state_t *ps);
 ast_t *ast_int_literal(const char *value, parse_state_t *ps);
 ast_t *ast_id(const char *value, parse_state_t *ps);
 ast_t *ast_array_qualifier(ast_t *type, ast_t *size, parse_state_t *ps);
+ast_t *ast_scope(ast_t *child, parse_state_t *ps);
 
 /* Return a string corresponding to the AST type.
    Parameters:

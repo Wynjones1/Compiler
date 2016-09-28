@@ -31,18 +31,17 @@ void check_type(ast_t *ast, sema_state_t *state)
 
 void can_convert_to(ast_t *from_type, ast_t *to_type, sema_state_t *state)
 {
-    NOT_IMPLEMENTED();
+    //NOT_IMPLEMENTED();
 }
-
 
 void check_is_bool_convertable(ast_t *from_type, sema_state_t *state)
 {
-    NOT_IMPLEMENTED();
+    //NOT_IMPLEMENTED();
 }
 
 ast_t *check_operation_is_supported(enum OPERATOR op, ast_t *lhs_type, ast_t *rhs_type, sema_state_t *state)
 {
-    NOT_IMPLEMENTED();
+    //NOT_IMPLEMENTED();
 }
 
 void sema_FUNCTION(ast_t *ast, sema_state_t *state)
@@ -134,12 +133,12 @@ void sema_BINARY_OPERATION(ast_t *ast, sema_state_t *state)
 
 void sema_UNARY_OPERATION(ast_t *ast, sema_state_t *state)
 {
-    NOT_IMPLEMENTED()
+    NOT_IMPLEMENTED();
 }
 
 void sema_BUILTIN_FUNC_CALL(ast_t *ast, sema_state_t *state)
 {
-    NOT_IMPLEMENTED()
+    NOT_IMPLEMENTED();
 }
 
 void sema_FUNC_CALL(ast_t *ast, sema_state_t *state)
@@ -157,12 +156,20 @@ void sema_FUNC_CALL(ast_t *ast, sema_state_t *state)
         sema(ast->func_call.params->list.data[i], state);
         can_convert_to(state->last_type, function->function.params->list.data[i], state);
     }
-    NOT_IMPLEMENTED()
 }
 
 void sema_QUALIFIER_ARRAY(ast_t *ast, sema_state_t *state)
 {
-    NOT_IMPLEMENTED()
+    NOT_IMPLEMENTED();
+}
+
+void sema_SCOPE(ast_t *ast, sema_state_t *state)
+{
+    symbol_table_t *parent = state->current_table;
+    state->current_table = symbol_table_init(parent);
+    ast->scope.table     = state->current_table;
+    sema(ast->scope.child, state);
+    state->current_table = parent;
 }
 
 void sema(ast_t *ast, sema_state_t *state)

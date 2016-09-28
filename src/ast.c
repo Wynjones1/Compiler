@@ -150,3 +150,11 @@ ast_t *ast_array_qualifier(ast_t *type, ast_t *size, parse_state_t *ps)
     out->type_decl.array_size = size;
     return out;
 }
+
+ast_t *ast_scope(ast_t *child, parse_state_t *ps)
+{
+    ast_t *out = ast_make(AST_TYPE_SCOPE, ps);
+    out->scope.table = NULL;
+    out->scope.child = child;
+    return out;
+}

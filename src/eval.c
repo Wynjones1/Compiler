@@ -261,7 +261,9 @@ ast_t *eval_BINARY_OPERATION(ast_t *ast, eval_state_t *state)
 }
 
 ast_t *eval_UNARY_OPERATION(ast_t *ast, eval_state_t *state)
-{}
+{
+    NOT_IMPLEMENTED();
+}
 
 ast_t *eval_STATEMENT_LIST(ast_t *ast, eval_state_t *state)
 {
@@ -285,6 +287,14 @@ ast_t *eval_BUILTIN_FUNC_CALL(ast_t *ast, eval_state_t *state)
         state->stdout_ = string_append(state->stdout_, value->string);
         state->stdout_ = string_append(state->stdout_, "\n");
     }
+}
+
+ast_t *eval_SCOPE(ast_t *ast, eval_state_t *state)
+{
+    state->table = symtab_init(state->table);
+    ast_t *out = eval(ast->scope.child, state);
+    state->table = state->table->parent;
+    return out;
 }
 
 ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)

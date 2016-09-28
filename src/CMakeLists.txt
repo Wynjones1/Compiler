@@ -11,6 +11,8 @@ set(SRC
     list.c
 	sema.c
     symbol_table.c
+    intermediate.c
+    type.c
 )
 
 file(GLOB HDR *.h)

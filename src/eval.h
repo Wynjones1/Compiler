@@ -12,10 +12,9 @@ typedef struct eval_result
     uint32_t    retcode;
 }eval_result_t;
 
-eval_state_t *eval_state_init(allocator_t *al);
-ast_t        *eval(ast_t *ast, eval_state_t *al);
-ast_t        *make_entry_node(allocator_t *alloc);
-
+eval_state_t  *eval_state_init(void);
+ast_t         *eval(ast_t *ast, eval_state_t *al);
+ast_t         *make_entry_node(void);
 eval_result_t *eval_string(const char *string);
 
 #endif

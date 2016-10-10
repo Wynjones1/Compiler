@@ -48,6 +48,7 @@ enum TOKEN_TYPE
     X_TOKEN_KEYWORD_LIST
 #undef X
     TOKEN_TYPE_WHITESPACE,
+    TOKEN_TYPE_EOF,
     NUM_TOKENS,
 };
 
@@ -59,11 +60,7 @@ typedef struct token
     uint32_t         pos;
 }token_t;
 
-typedef struct token_list_t
-{
-    size_t   size;
-    token_t *tokens;
-}token_list_t;
+typedef struct token_list token_list_t;
 
 /*  Initialise token
     Parameters:
@@ -82,8 +79,8 @@ void token_deinit(token_t *token);
 
 /*  Tokenise input into token list.
 
-    The last element in the list will always be a
-    token of type TOKEN_TYPE_NONE.
+    The last element in the list will always be a token of type
+    TOKEN_TYPE_NONE.
 
     Parameters:
         data - string containing the source code.
@@ -92,6 +89,11 @@ void token_deinit(token_t *token);
         list of tokens.
 */
 token_list_t *tokenise(const char *data);
-void token_list_delete(token_list_t *);
+
+token_list_t *tl_new();
+void          tl_delete(token_list_t *);
+token_t      *tl_get(token_list_t *tl, size_t index);
+size_t        tl_size(token_list_t *tl);
+void          tl_append(token_list_t *list, const char *data, enum TOKEN_TYPE type, size_t size);
 
 #endif

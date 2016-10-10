@@ -8,12 +8,12 @@ int main(int argc, char **argv)
     const char *file = string_read_file(filename);
 
     token_list_t *tl = tokenise(file);
-    printf("Found %d tokens\n", (int)tl->size);
-    for(size_t i = 0; i < tl->size; i++)
+    printf("Found %d tokens\n", (int)tl_size(tl));
+    for(size_t i = 0; i < tl_size(tl); i++)
     {
-        if(tl->tokens[i].value != NULL)
+        if(tl_get(tl, i)->value != NULL)
         {
-            printf("%s\n", tl->tokens[i].value);
+            printf("%s\n", tl_get(tl, i)->value);
         }
     }
     return 0;

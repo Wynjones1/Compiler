@@ -2,10 +2,12 @@
 #define AST_H
 #include <stddef.h>
 #include <stdbool.h>
+#include "allocator.h"
 #include "lexer.h"
 #include "operators.h"
 
 #define X_AST_TYPE_LIST  \
+    X(ROOT)              \
     X(FUNCTION)          \
     X(TYPE_DECL)         \
     X(PARAM)             \
@@ -36,7 +38,7 @@ enum AST_TYPE
 };
 
 typedef struct ast ast_t;
-typedef struct parse_state parse_state_t;
+typedef struct allocator allocator_t;
 typedef struct symbol_table symbol_table_t;
 
 struct ast
@@ -44,6 +46,12 @@ struct ast
     enum AST_TYPE type;
     union
     {
+        struct
+        {
+            allocator_t *al;
+            ast_t       *child;
+        }root;
+
         struct
         {
             ast_t *name;
@@ -124,20 +132,21 @@ struct ast
     };
 };
 
-ast_t *ast_function(ast_t *name, ast_t *params, ast_t *return_, ast_t *stmts, parse_state_t *ps);
-ast_t *ast_list(size_t count, ast_t **data, parse_state_t *ps);
-ast_t *ast_param(ast_t *type, ast_t *name, parse_state_t *ps);
-ast_t *ast_vardecl(ast_t *type, ast_t *name, ast_t *expr, parse_state_t *ps);
-ast_t *ast_binary_op(enum OPERATOR type, parse_state_t *ps);
-ast_t *ast_unary_op(enum OPERATOR type, parse_state_t *ps);
-ast_t *ast_return(ast_t *expr, parse_state_t *ps);
-ast_t *ast_if(ast_t *cond, ast_t *success, ast_t *fail, parse_state_t *ps);
-ast_t *ast_while(ast_t *cond, ast_t *stmts, parse_state_t *ps);
-ast_t *ast_func_call(ast_t *func, ast_t *params, parse_state_t *ps);
-ast_t *ast_int_literal(const char *value, parse_state_t *ps);
-ast_t *ast_id(const char *value, parse_state_t *ps);
-ast_t *ast_array_qualifier(ast_t *type, ast_t *size, parse_state_t *ps);
-ast_t *ast_scope(ast_t *child, parse_state_t *ps);
+ast_t *ast_function(ast_t *name, ast_t *params, ast_t *return_, ast_t *stmts, allocator_t *al);
+ast_t *ast_list(size_t count, ast_t **data, allocator_t *al);
+ast_t *ast_param(ast_t *type, ast_t *name, allocator_t *al);
+ast_t *ast_vardecl(ast_t *type, ast_t *name, ast_t *expr, allocator_t *al);
+ast_t *ast_binary_op(enum OPERATOR type, allocator_t *al);
+ast_t *ast_unary_op(enum OPERATOR type, allocator_t *al);
+ast_t *ast_return(ast_t *expr, allocator_t *al);
+ast_t *ast_if(ast_t *cond, ast_t *success, ast_t *fail, allocator_t *al);
+ast_t *ast_while(ast_t *cond, ast_t *stmts, allocator_t *al);
+ast_t *ast_func_call(ast_t *func, ast_t *params, allocator_t *al);
+ast_t *ast_int_literal(const char *value, allocator_t *al);
+ast_t *ast_id(const char *value, allocator_t *al);
+ast_t *ast_array_qualifier(ast_t *type, ast_t *size, allocator_t *al);
+ast_t *ast_scope(ast_t *child, allocator_t *al);
+ast_t *ast_root(void);
 
 /* Return a string corresponding to the AST type.
    Parameters:

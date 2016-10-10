@@ -40,8 +40,7 @@ int main(void)
 
     free(data);
 
-    allocator_t *allocator = allocator_init(1024);
-    parse_state_t *ps = parse_state_init(token_list, allocator);
+    parse_state_t *ps = parse_state_new(token_list);
     ast_t *out = PARSE_FUNC(ps);
     if(out == NULL)
     {
@@ -49,7 +48,6 @@ int main(void)
         return 1;
     }
     printf("Success\n");
-    token_list_delete(token_list);
-    allocator_delete(allocator);
+    tl_delete(token_list);
     return 0;
 }

@@ -6,24 +6,20 @@
 
 /*  Parse a list of tokens into an AST
     Parameters:
-        list - list of tokens.
-        num_toks - number of tokens.
+        tl - token list containing the tokens.
 
     Returns:
         AST of the program described by list.
 */
-ast_t *parse(token_list_t *tl, allocator_t *alloc);
+ast_t *parse(token_list_t *tl);
 
 typedef struct parse_state parse_state_t;
 struct parse_state
 {
-    token_t     *toks;
-    allocator_t *al;
-    size_t       count;
-    size_t       pos;
+    allocator_t  *al;
+    token_list_t *tl;
+    size_t        pos;
 };
-
-parse_state_t *parse_state_init(token_list_t *tl, allocator_t *alloc);
 
 ast_t *parse_braced_stmt_list(parse_state_t *ps);
 ast_t *parse_expression(parse_state_t *ps);
@@ -47,5 +43,8 @@ ast_t *parse_sub_expression(parse_state_t *ps);
 ast_t *parse_variable_declaration(parse_state_t *ps);
 ast_t *parse_while(parse_state_t *ps);
 ast_t *parse_type(parse_state_t *ps);
+
+parse_state_t *parse_state_new(token_list_t *tl);
+void parse_state_delete(parse_state_t *ps);
 
 #endif

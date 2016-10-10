@@ -43,27 +43,14 @@
         }                              \
     } while(0);
 
-parse_state_t *parse_state_init(token_list_t *tl, allocator_t *allocator)
-{
-    parse_state_t *out = malloc(sizeof(parse_state_t));
-    out->al    = allocator;
-    if(tl != NULL)
-    {
-        out->toks  = tl->tokens;
-        out->count = tl->size;
-    }
-    out->pos   = 0;
-    return out;
-}
-
 static token_t *current_token(parse_state_t *ps)
 {
-    return ps->toks + ps->pos;
+    return tl_get(ps->tl, ps->pos);
 }
 
 static token_t *next_token(parse_state_t *ps)
 {
-    token_t *out = current_token(ps);
+    token_t *out = tl_get(ps->tl, ps->pos);
     ps->pos += 1;
     return out;
 }
@@ -482,9 +469,9 @@ ast_t *parse_function(parse_state_t *ps)
     return ast_function(name, params, return_, stmts, ps);
 }
 
-ast_t *parse(token_list_t *tl, allocator_t *alloc)
+ast_t *parse(token_list_t *tl)
 {
-    parse_state_t *ps = parse_state_init(tl, alloc);
+    parse_state_t *ps = parse_state_new(tl);
 
     list_t *functions = list_init(sizeof(ast_t*));
         
@@ -501,4 +488,18 @@ ast_t *parse(token_list_t *tl, allocator_t *alloc)
     ast_t *out = ast_list(list_count(functions), list_data(functions), ps);
     list_delete(functions);
     return out;
+}
+
+parse_state_t *parse_state_new(token_list_t *tl)
+{
+    parse_state_t *out = malloc(sizeof(parse_state_t));
+    out->tl  = tl;
+    out->pos = 0;
+    out->al  = NULL;
+    return out;
+}
+
+void parse_state_delete(parse_state_t *ps)
+{
+    free(ps);
 }

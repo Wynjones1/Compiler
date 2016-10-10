@@ -13,7 +13,7 @@ run: $(BUILD_DIR)/Makefile
 	make -C $(BUILD_DIR) run
 
 test: $(BUILD_DIR)/Makefile
-	make -C $(BUILD_DIR) test
+	make -C $(BUILD_DIR) run_gtests
 
 dbg: $(BUILD_DIR)/Makefile
 	make -C $(BUILD_DIR) dbg

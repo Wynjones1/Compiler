@@ -1,0 +1,2 @@
+set(COMPILER_INCLUDE_DIRECTORIES ${CMAKE_SOURCE_DIR}/src)
+set(COMPILER_LIBRARIES           compilerlib)

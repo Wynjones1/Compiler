@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     string_delete(data);
 
     allocator_t *al = allocator_init(1024);
-    ast_t *ast = parse(tl, al);
+    ast_t *ast = parse(tl);
     if(ast == NULL)
     {
         TODO_ERROR_HANDLING("Parse Failed.\n");

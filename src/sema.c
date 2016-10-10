@@ -163,6 +163,11 @@ void sema_QUALIFIER_ARRAY(ast_t *ast, sema_state_t *state)
     NOT_IMPLEMENTED();
 }
 
+void sema_ROOT(ast_t *ast, sema_state_t *state)
+{
+    NOT_IMPLEMENTED();
+}
+
 void sema_SCOPE(ast_t *ast, sema_state_t *state)
 {
     symbol_table_t *parent = state->current_table;

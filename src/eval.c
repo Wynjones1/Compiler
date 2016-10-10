@@ -77,12 +77,12 @@ ast_t *query_table(symbol_table_t *table_, const char *symbol)
     eval_error("Could not find symbol \"%s\" in table.\n", symbol);
 }
 
-eval_state_t *eval_state_init(allocator_t *al)
+eval_state_t *eval_state_init(void)
 {
     eval_state_t *out = malloc(sizeof(eval_state_t));
     out->table    = symtab_init(NULL);
     out->globals  = out->table;
-    out->al       = al;
+    out->al       = allocator_init(1024);
     out->return_  = NULL;
     out->returned = false;
     out->stdout_  = string_empty();
@@ -331,6 +331,11 @@ ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
     return state->return_;
 }
 
+ast_t *eval_ROOT(ast_t *ast, eval_state_t *state)
+{
+    NOT_IMPLEMENTED();
+}
+
 ast_t *eval(ast_t *ast, eval_state_t *state)
 {
 #define X(NAME)                           \
@@ -343,22 +348,20 @@ ast_t *eval(ast_t *ast, eval_state_t *state)
     TODO_ERROR_HANDLING("Encountered node with unknown type.\n");
 }
 
-ast_t *make_entry_node(allocator_t *alloc)
+ast_t *make_entry_node(void)
 {
-    parse_state_t *ps = parse_state_init(NULL, alloc);
-    ast_t *func_name = ast_id("main", ps);
-    ast_t *param_list = ast_list(0, NULL, ps);
-    return ast_func_call(func_name, param_list, ps);
+    ast_t *func_name = ast_id("main", NULL);
+    ast_t *param_list = ast_list(0, NULL, NULL);
+    return ast_func_call(func_name, param_list, NULL);
 }
 
 eval_result_t *eval_string(const char *string)
 {
     token_list_t *tl = tokenise(string);
-    allocator_t *alloc = allocator_init(1024);
-    ast_t *ast  = parse(tl, alloc);
-    ast_t *main_ast = make_entry_node(alloc);
+    ast_t *ast  = parse(tl);
+    ast_t *main_ast = make_entry_node();
 
-    eval_state_t *state = eval_state_init(alloc);
+    eval_state_t *state = eval_state_init();
     eval(ast, state);
 
     ast_t *main_eval = eval(main_ast, state);
@@ -371,7 +374,5 @@ eval_result_t *eval_string(const char *string)
     out->stderr_ = string_copy(state->stderr_, NULL);
 
     eval_state_delete(state);
-    allocator_delete(alloc);
-    
     return out;
 }

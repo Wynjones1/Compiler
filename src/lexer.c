@@ -7,6 +7,12 @@
 #include <stdbool.h>
 #include "helpers.h"
 
+struct token_list
+{
+    size_t   size;
+    token_t *tokens;
+};
+
 void token_init(token_t *token, enum TOKEN_TYPE type, const char *value, size_t size)
 {
     token->type = type;
@@ -25,22 +31,6 @@ void token_deinit(token_t *token)
     string_delete(token->value);
 }
 
-/*  Append token data to a token list.
-
-    Parameters:
-        tok   - pointer to the token list.
-        data  - start of the token string.
-        type  - token type.
-        size  - size of the token string.
-*/
-static void token_list_append(token_list_t *list, const char *data, enum TOKEN_TYPE type, size_t size)
-{
-    token_t *tok = list->tokens;
-    tok = realloc(tok, sizeof(token_t) * (list->size+ 1));
-    token_init(tok + list->size, type, data, size);
-    list->tokens = tok;
-    list->size += 1;
-}
 
 static enum TOKEN_TYPE get_id_type(const char *data, size_t size)
 {
@@ -168,7 +158,7 @@ token_list_t *tokenise(const char *data_)
         {
             if(type != TOKEN_TYPE_WHITESPACE)
             {
-                token_list_append(list, data, type, size);
+                tl_append(list, data, type, size);
             }
             data  += size;
         }
@@ -177,11 +167,21 @@ token_list_t *tokenise(const char *data_)
             TODO_ERROR_HANDLING("Unrecognised character (%c)\n", data[0]);
         }
     }
-    token_list_append(list, NULL, TOKEN_TYPE_NONE, 0);
+    tl_append(list, NULL, TOKEN_TYPE_EOF, 0);
     return list;
 }
 
-void token_list_delete(token_list_t *tl)
+
+void tl_append(token_list_t *list, const char *data, enum TOKEN_TYPE type, size_t size)
+{
+    token_t *tok = list->tokens;
+    tok = realloc(tok, sizeof(token_t) * (list->size+ 1));
+    token_init(tok + list->size, type, data, size);
+    list->tokens = tok;
+    list->size += 1;
+}
+
+void tl_delete(token_list_t *tl)
 {
     for(unsigned int i = 0; i < tl->size; i++)
     {
@@ -195,4 +195,15 @@ void token_list_delete(token_list_t *tl)
         free(tl->tokens);
     }
     free(tl);
+}
+
+token_t *tl_get(token_list_t *tl, size_t index)
+{
+    assert(tl->size > index);
+    return tl->tokens + index;
+}
+
+size_t tl_size(token_list_t *tl)
+{
+    return tl->size;
 }

@@ -19,12 +19,12 @@ int main(int argc, char **argv)
 
     token_list_t *tl = tokenise(input_string);
     allocator_t *alloc = allocator_init(1024);
-    ast_t *ast = parse(tl, alloc);
+    ast_t *ast = parse(tl);
 
     sema_state_t *ss = sema_state_init(alloc);
     sema(ast, ss);
 
-    intermediate_gen_state_t *is = intermediate_state_init(alloc);
-    intermediate_t *ir = intermediate_gen(ast, is);
+    ir_gen_state_t *is = intermediate_state_init(alloc);
+    ir_t *ir = ir_gen(ast, is);
     return 0;
 }

@@ -146,7 +146,7 @@ ast_t *ast_int_literal(const char *value, allocator_t *al);
 ast_t *ast_id(const char *value, allocator_t *al);
 ast_t *ast_array_qualifier(ast_t *type, ast_t *size, allocator_t *al);
 ast_t *ast_scope(ast_t *child, allocator_t *al);
-ast_t *ast_root(void);
+ast_t *ast_root(allocator_t *al);
 
 /* Return a string corresponding to the AST type.
    Parameters:

@@ -7,14 +7,11 @@
 #include <stdlib.h>
 #include "string_common.h"
 
-#ifndef INPUT_FILE
-#error "INPUT_FILE must be defined"
-#endif
-
-
 int main(int argc, char **argv)
 {
-    const char *input_string   = string_read_file(INPUT_FILE);
+    if(argc == 1) return 1;
+
+    const char *input_string   = string_read_file(argv[1]);
 
     token_list_t *tl = tokenise(input_string);
     allocator_t *alloc = allocator_init(1024);

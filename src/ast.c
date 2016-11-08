@@ -159,11 +159,11 @@ ast_t *ast_scope(ast_t *child, allocator_t *al)
     return out;
 }
 
-ast_t *ast_root(void)
+ast_t *ast_root(allocator_t *al)
 {
     ast_t *out = malloc(sizeof(ast_t));
     out->type       = AST_TYPE_ROOT;
-    out->root.al    = allocator_init(1024);
+    out->root.al    = al; 
     out->root.child = NULL;
     return out;
 }

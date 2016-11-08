@@ -171,7 +171,6 @@ token_list_t *tokenise(const char *data_)
     return list;
 }
 
-
 void tl_append(token_list_t *list, const char *data, enum TOKEN_TYPE type, size_t size)
 {
     token_t *tok = list->tokens;

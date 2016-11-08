@@ -15,6 +15,9 @@ run: $(BUILD_DIR)/Makefile
 test: $(BUILD_DIR)/Makefile
 	make -C $(BUILD_DIR) run_gtests
 
+alltest: $(BUILD_DIR)/Makefile
+	cd $(BUILD_DIR); ctest .
+
 dbg: $(BUILD_DIR)/Makefile
 	make -C $(BUILD_DIR) dbg
 

@@ -93,7 +93,7 @@ ast_t *parse_array_qualifier(parse_state_t *ps)
     ast_t *size = PARSE(integer_literal, ps);
     if(size == NULL) return NULL;
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_RSQUARE);
-    return ast_array_qualifier(type, size, ps);
+    return ast_array_qualifier(type, size, ps->al);
 }
 
 ast_t *parse_type(parse_state_t *ps)
@@ -109,21 +109,21 @@ ast_t *parse_param(parse_state_t *ps)
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_COLON);
     ast_t *id = PARSE(id, ps);
 
-    return ast_param(type, id, ps);
+    return ast_param(type, id, ps->al);
 }
 
 ast_t *parse_id(parse_state_t *ps)
 {
     token_t *tok;
     ACCEPT_OR_FAIL_VAR(tok, ps, TOKEN_TYPE_ID);
-    return ast_id(tok->value, ps);
+    return ast_id(tok->value, ps->al);
 }
 
 ast_t *parse_integer_literal(parse_state_t *ps)
 {
     token_t *tok;
     ACCEPT_OR_FAIL_VAR(tok, ps, TOKEN_TYPE_INT_LITERAL);
-    return ast_int_literal(tok->value, ps);
+    return ast_int_literal(tok->value, ps->al);
 }
 
 ast_t *parse_expression_list(parse_state_t *ps)
@@ -140,7 +140,7 @@ ast_t *parse_expression_list(parse_state_t *ps)
     }
     while(accept(ps, TOKEN_TYPE_COMMA));
     /* Copy the data from the list to an AST list */
-    ast_t *out = ast_list(list_count(list), list_data(list), ps);
+    ast_t *out = ast_list(list_count(list), list_data(list), ps->al);
     list_delete(list);
     return out;
 }
@@ -152,7 +152,7 @@ ast_t *parse_func_call(parse_state_t *ps)
     ast_t *params = PARSE(expression_list, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_RPAREN);
 
-    return ast_func_call(func, params, ps);
+    return ast_func_call(func, params, ps->al);
 }
 
 ast_t *parse_sub_expression(parse_state_t *ps)
@@ -171,7 +171,7 @@ ast_t *parse_operation(parse_state_t *ps)
     }
     token_t *op = next_token(ps);
     // The actual tree nodes will be filled in later.
-    return ast_binary_op((enum OPERATOR)op->type, ps);
+    return ast_binary_op((enum OPERATOR)op->type, ps->al);
 }
 
 struct sy_queue_stack
@@ -315,7 +315,7 @@ ast_t *parse_return(parse_state_t *ps)
 {
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_KW_RETURN);
     ast_t *expr = PARSE(expression, ps);
-    ast_t *out  = ast_return(expr, ps);
+    ast_t *out  = ast_return(expr, ps->al);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_SEMICOLON);
     return out;
 }
@@ -333,7 +333,7 @@ ast_t *parse_variable_declaration(parse_state_t *ps)
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_SEMICOLON);
 
     // Create the variable declaration node.
-    return ast_vardecl(type, name, expr, ps);
+    return ast_vardecl(type, name, expr, ps->al);
 }
 
 ast_t *parse_paren_expr(parse_state_t *ps)
@@ -352,7 +352,7 @@ ast_t *parse_braced_stmt_list(parse_state_t *ps)
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_LBRACE);
     ast_t *child = PARSE(statement_list, ps);
     ACCEPT_OR_FAIL(ps, TOKEN_TYPE_RBRACE);
-    return ast_scope(child, ps);
+    return ast_scope(child, ps->al);
 }
 
 ast_t *parse_if_common(parse_state_t *ps)
@@ -370,7 +370,7 @@ ast_t *parse_if_common(parse_state_t *ps)
     }
 
     // Create the "if"/"else"/"elif" node.
-    return ast_if(cond, success, fail, ps);
+    return ast_if(cond, success, fail, ps->al);
 }
 
 ast_t *parse_if(parse_state_t *ps)
@@ -387,7 +387,7 @@ ast_t *parse_while(parse_state_t *ps)
     ast_t *stmt = PARSE(braced_stmt_list, ps);
 
     // Create the "while" node
-    return ast_while(cond, stmt, ps);
+    return ast_while(cond, stmt, ps->al);
 }
 
 ast_t *parse_expression_statement(parse_state_t *ps)
@@ -425,7 +425,7 @@ ast_t *parse_list_generic(
         }
         out  = parse_(func, ps);
     }
-    ast_t *out_list = ast_list(list_count(list), list_data(list), ps);
+    ast_t *out_list = ast_list(list_count(list), list_data(list), ps->al);
     list_delete(list);
     return out_list;
 }
@@ -466,7 +466,7 @@ ast_t *parse_function(parse_state_t *ps)
     ast_t *stmts = PARSE(braced_stmt_list, ps);
 
     // Create the function AST
-    return ast_function(name, params, return_, stmts, ps);
+    return ast_function(name, params, return_, stmts, ps->al);
 }
 
 ast_t *parse(token_list_t *tl)
@@ -485,7 +485,8 @@ ast_t *parse(token_list_t *tl)
             TODO_ERROR_HANDLING("Parse failed: No progress made.\n");
         }
     }
-    ast_t *out = ast_list(list_count(functions), list_data(functions), ps);
+    ast_t *out = ast_root(ps->al);
+    out->root.child = ast_list(list_count(functions), list_data(functions), ps->al);
     list_delete(functions);
     return out;
 }
@@ -495,7 +496,7 @@ parse_state_t *parse_state_new(token_list_t *tl)
     parse_state_t *out = malloc(sizeof(parse_state_t));
     out->tl  = tl;
     out->pos = 0;
-    out->al  = NULL;
+    out->al  = allocator_init(1024);
     return out;
 }
 

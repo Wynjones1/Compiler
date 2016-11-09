@@ -3,6 +3,7 @@ import argparse
 import subprocess
 import sys
 import os
+import logging
 from os.path import join as pjoin
 
 def parse_args(argv):
@@ -24,16 +25,37 @@ def main(argv):
                             stdout=subprocess.PIPE)
     stdout, stderr = proc.communicate()
 
+    returncode = 0
     if stdout != expected_stdout:
-        return 1
+        print("Stdout does not match")
+        print("== expected ".ljust(80, "="))
+        print(expected_stdout)
+        print("== got ".ljust(80, "="))
+        print(stdout)
+        print("=" * 80)
+        returncode = 1
 
     if stderr != expected_stderr:
-        return 1
+        print("Stderr does not match")
+        print("== expected ".ljust(80, "="))
+        print(expected_stderr)
+        print("== got ".ljust(80, "="))
+        print(stderr)
+        print("=" * 80)
+        returncode = 1
 
     if proc.returncode != expected_retcode:
-        return 1
+        print("Return code does not match")
+        print("== expected ".ljust(80, "="))
+        print(expected_retcode)
+        print("== got ".ljust(80, "="))
+        print(proc.returncode)
+        print("=" * 80)
+        returncode = 1
 
-    return 0
+    if returncode == 0:
+        print("OK!")
+    return returncode 
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

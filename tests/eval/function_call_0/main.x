@@ -7,5 +7,3 @@ function main() -> int
 {
     return add(10, 20);
 }
-$
-30

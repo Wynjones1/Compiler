@@ -283,7 +283,6 @@ ast_t *eval_BUILTIN_FUNC_CALL(ast_t *ast, eval_state_t *state)
     {
         ast_t *value = eval(ast->func_call.params->list.data[0], state);
         assert(value->type == AST_TYPE_INT_LIT);
-        printf("%s\n", value->string);
         state->stdout_ = string_append(state->stdout_, value->string);
         state->stdout_ = string_append(state->stdout_, "\n");
     }
@@ -333,7 +332,8 @@ ast_t *eval_FUNC_CALL(ast_t *ast, eval_state_t *state)
 
 ast_t *eval_ROOT(ast_t *ast, eval_state_t *state)
 {
-    NOT_IMPLEMENTED();
+    eval(ast->root.child, state);
+    //NOT_IMPLEMENTED();
 }
 
 ast_t *eval(ast_t *ast, eval_state_t *state)
@@ -350,9 +350,10 @@ ast_t *eval(ast_t *ast, eval_state_t *state)
 
 ast_t *make_entry_node(void)
 {
+    allocator_t *al = allocator_init(1024);
     ast_t *func_name = ast_id("main", NULL);
-    ast_t *param_list = ast_list(0, NULL, NULL);
-    return ast_func_call(func_name, param_list, NULL);
+    ast_t *param_list = ast_list(0, NULL, al);
+    return ast_func_call(func_name, param_list, al);
 }
 
 eval_result_t *eval_string(const char *string)

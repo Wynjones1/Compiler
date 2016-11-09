@@ -14,6 +14,7 @@ def parse_args(argv):
 def main(argv):
     args = parse_args(argv)
     test_file        = pjoin(args.test, "main.x")
+
     expected_retcode = int(open(pjoin(args.test, "returncode.txt")).read())
     expected_stdout  = open(pjoin(args.test, "stdout.txt")).read()
     expected_stderr  = open(pjoin(args.test, "stderr.txt")).read()

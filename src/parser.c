@@ -475,7 +475,7 @@ ast_t *parse(token_list_t *tl)
 
     list_t *functions = list_init(sizeof(ast_t*));
         
-    while(current_token(ps)->type != TOKEN_TYPE_NONE)
+    while(current_token(ps)->type != TOKEN_TYPE_EOF)
     {
         size_t start_pos = ps->pos;
         ast_t *function = parse_function(ps);

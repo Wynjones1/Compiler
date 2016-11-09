@@ -16,7 +16,7 @@ foreach(TEST ${TESTS})
     set(TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${TEST})
 	
     add_test(
-        NAME "eval_${TEST}"
+        NAME "eval<${TEST}>"
         COMMAND ${RUN_TEST_PY} $<TARGET_FILE:eval_test> ${TEST_DIR}
     )
 endforeach()
